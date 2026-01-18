@@ -1,24 +1,33 @@
+# DATA INGETSION PIPELINE FOR FLOODS FROM GDACS
+
+import requests
 import json
 import psycopg2
 from dotenv import load_dotenv
 import os
 import time
 
+url = "https://www.gdacs.org/gdacsapi/api/events/geteventlist/MAP"
+
 while True:
     try:
         #connecting to db
         load_dotenv()
-
         conn = psycopg2.connect(
             dbname = os.getenv("DB_NAME"),
             user = os.getenv("DB_USER"),
             password = os.getenv("DB_PASS")
         )
-
         cur = conn.cursor()
 
-        with open('data/gdacs.json', 'r', encoding='utf-8') as f:
-            data = json.load(f)
+        #taking live data
+        response = requests.get(url, timeout=10)
+        response.raise_for_status()
+        data = response.json()
+
+        #storing it for further data analysis, if neccesary
+        with open('data/gdacs.json', 'w', encoding='utf-8') as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
 
         latest = {}
         for f in data["features"]:
@@ -91,8 +100,9 @@ while True:
         cur.close()
         conn.close()
 
-        print("✅ Cycle complete, waiting 10s...")
-        time.sleep(10)
+        waittime = 30
+        print(f"✅ Cycle complete, waiting {waittime}s...")
+        time.sleep(30)
     
     except Exception as e:
         print('Error', e)
