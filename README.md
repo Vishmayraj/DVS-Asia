@@ -14,94 +14,301 @@ one that could eventually power a live, interactive disaster dashboard.
 Every step — the tables, the constraints, the debugging — was about making data _flow_ smoothly and truthfully.
 
 ---
+## 🔥 Fire Ingestion Pipeline (NASA FIRMS)
 
-## 🛰️ The Fire Data Saga
-
-It began with NASA’s **FIRMS** (Fire Information for Resource Management System) API.  
-Turns out, FIRMS doesn’t give you _a_ fire list — it gives you _many_, each from a different satellite or mode.
-
-I used five of them:
-
-|Source|Description|
-|---|---|
-|**VIIRS_NOAA20_NRT**|VIIRS sensor on the NOAA-20 satellite (Near Real Time)|
-|**VIIRS_NOAA21_NRT**|Same VIIRS sensor, newer satellite|
-|**VIIRS_SNPP_NRT**|The Suomi NPP satellite’s VIIRS feed|
-|**MODIS_NRT**|The classic Terra/Aqua MODIS sensors|
-|**GOES_NRT**|Geostationary satellites (big, fast coverage)|
-
-At first, I thought merging them all into one table would simplify things.  
-It didn’t — each behaves differently.
-
-So now, **each satellite has its own table**.  
-That decision made everything cleaner: easier debugging, isolated failures, and independent schedules.
+This module handles **real-time ingestion of fire detection data** from NASA’s **FIRMS (Fire Information for Resource Management System)** API.  
+It’s one of the core ingestion pipelines in DVS — alongside earthquakes, floods, cyclones, and droughts — and is designed to run continuously, storing only the **most current fire data** across multiple satellites.
 
 ---
 
-## 💾 The Tables
+### 🛰️ Overview
 
-Each satellite table follows the same schema — directly inspired by FIRMS’ CSV format.
+FIRMS provides thermal anomaly (fire) detections from several satellite instruments in near-real time.  
+Each satellite produces slightly different readings and update frequencies, so this pipeline treats them independently.
+
+We currently ingest five data sources:
+
+|Source|Satellite|Description|
+|---|---|---|
+|**VIIRS_NOAA20_NRT**|NOAA-20|Near-Real-Time VIIRS sensor|
+|**VIIRS_NOAA21_NRT**|NOAA-21|Newer VIIRS platform|
+|**VIIRS_SNPP_NRT**|Suomi NPP|VIIRS on Suomi National Polar-orbiting Partnership|
+|**MODIS_NRT**|Terra/Aqua|MODIS thermal sensors|
+|**GOES_NRT**|Himawari / Meteosat|Geostationary rapid updates|
+
+Each one gets its own table in PostgreSQL:
+
+`firms_viirs_noaa20_nrt firms_viirs_noaa21_nrt firms_viirs_snpp_nrt firms_modis_nrt firms_goes_nrt`
+
+This design keeps debugging, updates, and performance clean — each satellite behaves independently, so there’s no data collision.
+
+---
+
+### 🧩 Data Structure
+
+Every FIRMS dataset shares the same column structure, which directly maps into SQL tables:
 
 |Column|Description|
 |---|---|
-|`latitude`, `longitude`|Where the fire was detected|
-|`bright_ti4`, `bright_ti5`|Thermal band brightness|
-|`scan`, `track`|Pixel dimensions (precision)|
-|`acq_date`, `acq_time`|When it was captured|
-|`satellite`, `instrument`|Source identifiers|
-|`confidence`|Detection confidence (L/N/H or %)|
-|`version`|Dataset version|
-|`frp`|Fire Radiative Power — intensity|
-|`daynight`|Captured during day or night|
-
-The tricky part?  
-FIRMS _re-sends_ the same fire points across updates. Without protection, you’ll get thousands of duplicates.
-
-That’s when **PostgreSQL constraints** became my best friend (and worst enemy).
+|`latitude`, `longitude`|Fire detection coordinates|
+|`bright_ti4`, `bright_ti5`|Brightness of thermal bands|
+|`scan`, `track`|Pixel size and scan geometry|
+|`acq_date`, `acq_time`|Acquisition timestamp|
+|`satellite`, `instrument`|Source metadata|
+|`confidence`|Detection certainty (`l`, `n`, `h`, or `%`)|
+|`version`|FIRMS dataset version (e.g., `2.0NRT`)|
+|`frp`|Fire Radiative Power (intensity)|
+|`daynight`|Day (`D`) or night (`N`) observation|
 
 ---
 
-## ⚙️ The Great Constraint Battle
+### ⚙️ Deduplication via Constraints
 
-At first, I assumed this was enough:
+NASA FIRMS data often re-sends the same detections as the feed refreshes.  
+To avoid redundant inserts, every table includes a **unique constraint**:
 
-`(latitude, longitude, acq_date, acq_time)`
+`UNIQUE (   latitude,   longitude,   acq_date,   acq_time,   satellite,   instrument,   confidence,   frp )`
 
-It wasn’t.  
-FIRMS happily reuses those but tweaks confidence or FRP.
-
-After many “duplicate key” errors and constraint rebuilds, I landed on the perfect uniqueness set:
-
-`(latitude, longitude, acq_date, acq_time, satellite, instrument, confidence, frp)`
-
-Now, every run quietly ignores repeats.
-
-At one point, I thought the script was inserting 3,000 new rows each loop —  
-turns out I was just printing the CSV length 🤦‍♂️.  
-The database was calmly rejecting duplicates the whole time.
-
-> Lesson learned: your script might lie, but your database won’t.
+During ingestion, if a new row violates this constraint, PostgreSQL quietly skips it.  
+This keeps the data **deduplicated automatically**, no manual filtering required.
 
 ---
 
-## 🌋 The Earthquake Side
+### 🔄 Real-Time Refresh Logic
 
-Next came earthquakes — from the **USGS Earthquake Catalog API**.  
-Structured, predictable, and refreshingly consistent.
+Since FIRMS only provides **current detections for the last day**, there’s no need to archive historical data here.  
+Instead, this pipeline keeps tables “live” — replacing their entire content whenever the dataset changes.
 
-It outputs GeoJSON instead of CSV, which makes parsing simpler.  
-Each event comes with its own globally unique ID — no deduping headaches.
+To do this efficiently, the script computes a **hash** (checksum) of each downloaded CSV.
+
+If the hash changes → the table is truncated and refreshed.  
+If it’s the same → the update is skipped.
+
+This prevents needless re-inserts and makes the pipeline lightweight even when running every few seconds.
+
+---
+
+### 🧠 Persistent Hash Tracking
+
+To make the system **restart-safe**, each satellite’s last known hash is stored in a local file:
+
+`/state/hashes.json`
+
+Example:
+
+`{   "VIIRS_NOAA20_NRT": "a4f8b32d3adf0d3b9a8cbe3b5f293c21",   "VIIRS_NOAA21_NRT": "d1bfa8c473a1ad7aeb83e71f5d13f9a4" }`
+
+On every cycle:
+
+- The new CSV is fetched.
+    
+- Its hash is computed.
+    
+- If the hash differs from what’s stored → the table refreshes and the file updates.
+    
+- Otherwise, it logs “No change detected.”
+    
+
+This design ensures the system **remembers state across restarts** — it won’t refetch old data after rebooting.
+
+---
+
+### 🧰 Environment Configuration
+
+All sensitive keys and credentials live in `.env`:
+
+`MAP_KEY=your_firms_api_key DB_USER=postgres DB_PASS=yourpassword DB_NAME=dvs`
+
+The script loads these automatically via `python-dotenv`.
+
+---
+
+### 🗺️ Geographic Focus
+
+Each API request fetches only **Asia** using a bounding box filter:
+
+`asia_coords = "60,5,150,55"`
+
+This keeps transactions well within FIRMS limits (5000/10min),  
+and ensures DVS focuses on one disaster-rich, diverse region.
+
+---
+
+### 📊 Behavior Summary
+
+|Behavior|Description|
+|---|---|
+|**Update Frequency**|~Every 30 seconds (configurable)|
+|**Duplication Handling**|PostgreSQL unique constraints|
+|**Refresh Strategy**|Hash-based change detection + table truncation|
+|**Scope**|Asia bounding box|
+|**Data Lifetime**|Current-day fires only|
+|**Persistence**|Hashes stored in `hashes.json`|
+
+---
+
+### 🧡 The Journey
+
+This pipeline started as “let’s just store some FIRMS data”  
+and evolved into a **self-aware ingestion engine** that:
+
+- Talks to five satellites independently
+    
+- Detects changes before rewriting
+    
+- Cleans and deduplicates automatically
+    
+- Persists its state safely between runs
+    
+
+Now it runs silently — fetching, checking, cleaning, and refreshing —  
+a heartbeat of the DVS ecosystem. 🌍🔥
+
+---
+
+## 🌋 Earthquake Ingestion Pipeline (USGS)
+
+This module handles real-time ingestion of global earthquake data from the **USGS (United States Geological Survey)** Earthquake API.  
+It’s one of the core ingestion systems in the DVS — standing proudly beside fires, floods, cyclones, and droughts — and is designed to hum quietly in the background, catching the planet’s every shake.
+
+---
+
+### 🧭 Overview
+
+The USGS Earthquake API provides near real-time updates on seismic activity across the globe.  
+Each event includes detailed metadata — from magnitude and depth to location precision and seismic significance — all accessible via a simple GeoJSON endpoint.
+
+Our pipeline continuously fetches this data for **Asia**, filtering by a bounding box.  
+While earthquakes are momentary, their records are permanent — so this module smartly manages what to keep live, and what to archive.
+
+---
+
+### 🌍 Geographic Focus
+
+Each API request is bounded to cover **Asia**, using the following coordinates:
+
+`minlatitude = -10 maxlatitude = 80 minlongitude = 25 maxlongitude = 170`
+
+This roughly captures the Asian continent (yes, Alaska sneaks in a little — we’ll forgive it).
+
+---
+
+### 🧩 Data Structure
+
+Each earthquake event carries dozens of fields, but only a few truly matter for disaster visualization and analysis.  
+Our ingestion pipeline extracts and stores only the essentials:
 
 |Column|Description|
 |---|---|
-|`id`|Serial primary key|
-|`time`|Timestamp of the quake|
-|`latitude`, `longitude`, `depth`|Where and how deep|
-|`mag`, `magType`|Magnitude and scale|
-|`place`|Textual location|
-|`status`, `tsunami`, `type`|Event metadata|
+|id|Unique USGS event identifier|
+|latitude, longitude|Epicenter coordinates|
+|depth|Depth of the quake (in km)|
+|mag|Magnitude of the quake|
+|magtype|Magnitude scale (mb, mww, etc.)|
+|time|Event occurrence timestamp (UTC)|
+|tsunami|1 if tsunami potential, else 0|
+|sig|Significance score (higher = more notable)|
+|place|Human-readable location string|
 
-No unique constraint needed — USGS handles that beautifully.
+Everything else — like “felt”, “cdi”, or “gap” — is gracefully ignored. We’re here for clean, actionable data, not a thesis.
+
+---
+
+### ⚙️ Table Design
+
+Two PostgreSQL tables power this system:
+
+|Table|Purpose|
+|---|---|
+|**earthquakes**|Live, rolling table — contains the last 30 days of seismic activity|
+|**earthquakes_archive**|Long-term storage — a full historical record of all quakes|
+
+This design keeps live data fast and light, while the archive holds the earth’s entire emotional history.
+
+---
+
+### 🧠 Deduplication
+
+Each event’s `id` serves as a **primary key**, ensuring no duplicates ever sneak in.
+
+During ingestion, the query uses:
+
+`ON CONFLICT (id) DO NOTHING`
+
+If the USGS re-sends an event with the same ID, PostgreSQL politely nods and skips it — no fuss, no redundancy.
+
+---
+
+### 🔄 Real-Time Ingestion Logic
+
+The script continuously:
+
+1. Fetches the latest GeoJSON feed from the USGS API.
+    
+2. Parses each event and inserts it into both **earthquakes** and **earthquakes_archive**.
+    
+3. Deletes events older than **30 days** from the live table.
+    
+
+This ensures the live table remains sleek and current, while the archive grows infinitely wiser.
+
+**Update Frequency:** ~Every 30 seconds (configurable).
+
+---
+
+### 🧹 Data Retention Strategy
+
+- **Live table:** Keeps only the most recent 30 days of data.
+    
+- **Archive table:** Stores everything, forever.
+    
+- **Yearly reset:** When a new year begins, the system seamlessly continues inserting new data while older entries remain safe in the archive.
+    
+
+If you check back in March to find a January quake — it’ll still be there, just living quietly in `earthquakes_archive`.
+
+---
+
+### 🧰 Environment Configuration
+
+As always, secrets and configuration live in `.env`:
+
+`DB_NAME=earthquakes DB_USER=postgres DB_PASS=yourpassword`
+
+The script automatically loads these with `python-dotenv`.
+
+---
+
+### ⚡ Behavior Summary
+
+| Behavior             | Description                                |
+| -------------------- | ------------------------------------------ |
+| Update Frequency     | ~Every 30 seconds (configurable)           |
+| Duplication Handling | PostgreSQL primary key on `id`             |
+| Refresh Strategy     | Continuous insert + 30-day rolling cleanup |
+| Scope                | Asia bounding box                          |
+| Data Lifetime        | 30 days live, infinite in archive          |
+| Persistence          | Managed in PostgreSQL                      |
+
+---
+
+### 💡 The Journey
+
+This pipeline started as “let’s just store some earthquake data”  
+and quickly evolved into a lean, self-managing ingestion engine that:
+
+- Watches Asia tremble in real time
+    
+- Cleans itself every 30 days
+    
+- Archives everything neatly for eternity
+    
+- Never loses a quake, even during a reboot
+    
+
+Now it runs quietly — fetching, inserting, archiving, and cleaning —  
+a steady heartbeat in the DVS ecosystem. 🌏💥
+
 
 ---
 
@@ -109,10 +316,8 @@ No unique constraint needed — USGS handles that beautifully.
 
 Everything lives inside a single PostgreSQL database, renamed simply to **`dvs`**.
 
-`public ├── earthquakes ├── firms_viirs_noaa20_nrt ├── firms_viirs_noaa21_nrt ├── firms_viirs_snpp_nrt ├── firms_modis_nrt └── firms_goes_nrt`
-
 Current size: **~16 MB.**  
-That’s tiny, considering it stores daily fire detections for an entire continent —  
+That’s tiny, considering it stores daily disaster detections for an entire continent —  
 proof that good structure scales gracefully.
 
 ---
@@ -160,13 +365,126 @@ a small practice, but crucial when you automate live ingestion.
 
 ---
 
-## 🧡 The Journey
+## 🔥 **GDACS Ingestion Pipeline (Global Disaster Alerts)**
 
-What began as _“let’s store some fire data”_ turned into a self-sustaining ingestion system —  
-one that fetches, cleans, deduplicates, and stores real NASA and USGS data every few seconds.
+This module handles real-time ingestion of global disaster event data from **GDACS** (Global Disaster Alert and Coordination System).  
+It’s one of the core ingestion pipelines in **DVS** — alongside FIRMS fires, USGS earthquakes, cyclones, droughts, and more — and is designed to run continuously, storing only the most **current, live disaster events**.
 
-It’s not just about building a database anymore.  
-It’s about **watching the Earth breathe — through heat and tremors — in real time.**
+---
+### 🛰️ **Overview**
+
+GDACS provides near-real-time alerts for floods, tropical cyclones, droughts, and other disasters.  
+Each event is constantly updated, and new polygons or severity readings may appear over time.  
+Unlike some other feeds, GDACS gives you multiple “episodes” of the same event — so we only keep the **latest episode per event** for performance and sanity.
+
+---
+### 📡 **Event Types**
+
+| Type   | Meaning          | Notes                         |
+| ------ | ---------------- | ----------------------------- |
+| FL     | Flood            | Water on the move 🌊          |
+| TC     | Tropical Cyclone | Windy business 🌪️            |
+| DR     | Drought          | Thirsty lands 🌵              |
+| EQ     | Earthquake       | Handled by USGS pipeline ⚡    |
+| WF     | Wildfire         | Handled by FIRMS pipeline 🔥  |
+| Others | …                | Rare events we ignore for now |
+
+---
+### 🧩 **Data Structure**
+
+Every GDACS event is ingested as a JSON **Feature**, containing:
+
+| Field                                  | Description                           |
+| -------------------------------------- | ------------------------------------- |
+| id                                     | Event ID (unique per event)           |
+| type                                   | Event type (FL, TC, DR…)              |
+| description                            | Human-readable summary                |
+| score                                  | GDACS alert score (intensity proxy)   |
+| org_country                            | Country reporting the event           |
+| from_date / to_date                    | Event duration                        |
+| date_modified                          | Last GDACS update timestamp           |
+| affectedcountries                      | Comma-separated affected countries    |
+| severity / severitytext / severityunit | Event intensity                       |
+| iscurrent                              | Boolean — event is active?            |
+| geom_url                               | Link to polygon/geometry for plotting |
+| report_url                             | GDACS event report page               |
+
+### ⚙️ **Deduplication & Latest Updates**
+
+GDACS events can have **multiple features per ID**, sometimes differing only slightly in geometry.  
+We only store the **latest `datemodified` per `eventid`** and skip everything else.  
+This keeps the DB lean while still giving you accurate map plotting.
+
+SQL constraints ensure uniqueness:
+
+`UNIQUE (id, type)`
+
+…so if the same event pops up again, PostgreSQL quietly updates its fields instead of creating duplicates.
+
+---
+### 🔄 **Real-Time Refresh Logic**
+
+Since GDACS constantly pushes updates:
+
+1. Fetch the latest JSON from the GDACS API.
+    
+2. Filter out inactive events (`iscurrent != true`).
+    
+3. Keep only the latest feature per event (`datemodified`).
+    
+4. Skip earthquakes and fires — they’re handled by separate pipelines.
+    
+5. Insert/update live events into `gdacs_live` table.
+    
+
+The loop runs **continuously**, with a 10–30 second delay between cycles to respect API limits.
+
+---
+### 🧠 **Lazy Geometry Fetching**
+
+Full polygons can be huge (hundreds to thousands of coordinates).  
+We **don’t store them directly** — only the URL.  
+Polygons are fetched **on-demand**, e.g., when plotting maps, which keeps ingestion fast and the database light.
+
+---
+### 🧰 **Environment Configuration**
+
+All sensitive credentials live in `.env`:
+
+`DB_NAME=dvs DB_USER=postgres DB_PASS=yourpassword`
+
+Loaded via `python-dotenv` automatically.
+
+---
+### 📊 **Behavior Summary**
+
+|Behavior|Description|
+|---|---|
+|Update Frequency|~Every 10–30s (configurable)|
+|Deduplication|PostgreSQL unique constraints + latest `datemodified`|
+|Refresh Strategy|Continuous fetch + filtering of inactive events|
+|Scope|Global alerts|
+|Data Lifetime|Only **current, active disasters**|
+|Geometry Handling|Lazy fetch via `geom_url`|
+|Exclusions|Earthquakes & wildfires (handled by separate pipelines)|
+
+---
+### 🧡 **The Journey**
+
+This pipeline began as “let’s just dump GDACS JSON somewhere” and evolved into a **self-cleaning, live disaster ingestion engine**:
+
+- Fetches updates continuously
+    
+- Keeps only relevant, current events
+    
+- Avoids duplication
+    
+- Stores lightweight live summaries for plotting
+    
+- Defers heavy polygon fetching to when you actually need it
+    
+
+Now it runs quietly in the background, **keeping your live disaster map accurate and snappy** 🌍💥
 
 ---
 
