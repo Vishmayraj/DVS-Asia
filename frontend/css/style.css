@@ -1,0 +1,145 @@
+html, body {
+  height: 100%;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+header {
+  background: #181818;
+  color: white;
+  padding: 1rem 2rem;
+  display: flex;           /* main horizontal row */
+  justify-content: space-between;
+  align-items: center;     /* vertical align items in row */
+  font-family: 'Segoe UI', sans-serif;
+  background: linear-gradient(135deg, #181818, #282828);
+}
+
+/* Left side: logo/title */
+.header-left {
+  font-size: 2rem;        /* large title */
+  font-weight: 700;
+  margin-left: 30px;
+}
+
+
+/* Right side: stacked vertically */
+.header-right {
+  display: flex;
+  flex-direction: column;  /* stack about + nav */
+  align-items: flex-end; /* align left */
+}
+
+/* About us paragraph */
+.header-about p {
+  margin: 0 0 0.3rem 0;    /* small margin-bottom for spacing */
+  font-size: 0.99rem;       /* smaller than title */
+  color: #ccc;
+  margin-bottom: 13px;
+}
+
+/* Nav links */
+.header-nav a {
+  color: #ccc;
+  margin-right: 1rem;
+  text-decoration: none;
+  font-size: 0.95rem;
+}
+
+.header-nav a:hover {
+  color: #fff;
+}
+
+/* Optional: make nav wrap on small screens */
+@media (max-width: 768px) {
+  header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .header-right {
+    flex-direction: column;
+    margin-top: 0.5rem;
+  }
+
+  .header-nav a {
+    margin-right: 0.5rem;
+    margin-bottom: 0.3rem;
+  }
+}
+
+#map {
+  flex: 1;
+  width: 100%;
+  min-height: 80vh;
+}
+
+footer {
+  background: #111;
+  color: #ccc;
+  padding: 2rem;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.footer-content {
+  display: flex;
+  justify-content: space-around;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.footer-section {
+  flex: 1;
+  min-width: 200px;
+}
+
+.footer-section h3 {
+  color: #fff;
+  margin-bottom: 0.5rem;
+}
+
+.footer-section ul {
+  list-style: none;
+  padding: 0;
+}
+
+.footer-section ul li {
+  margin: 0.3rem 0;
+}
+
+.footer-section a {
+  color: #ccc;
+  text-decoration: none;
+}
+
+/* ✅ Specific adjustments */
+.footer-section.about {
+  flex: 2; 
+}
+
+.footer-section.data {
+  flex: 1;
+}
+
+.footer-section.connect {
+  flex: 1;
+}
+
+.footer-section a:hover {
+  color: #fff;
+}
+
+.footer-section:not(:last-child) {
+  border-right: 1px solid #333;  /* thin vertical line */
+  padding-right: 2rem;           /* spacing so text doesn't touch */
+  margin-right: 2rem;            /* spacing after border */
+}
+
+.footer-bottom {
+  text-align: center;
+  margin-top: 1.5rem;
+  font-size: 0.9rem;
+  border-top: 1px solid #333;
+  padding-top: 1rem;
+}

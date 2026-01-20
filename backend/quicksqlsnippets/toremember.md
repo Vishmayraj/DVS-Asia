@@ -1,0 +1,126 @@
+-- CREATE TABLE earthquakes (
+--     id text PRIMARY KEY,
+--     latitude double precision NOT NULL,
+--     longitude double precision NOT NULL,
+--     time timestamp WITHOUT time zone NOT NULL,
+--     depth double precision,
+--     mag real,
+--     magtype varchar(10),
+--     tsunami smallint,
+--     sig integer,
+--     place text
+-- );
+
+-- CREATE TABLE gdacs_live (
+--     id integer,
+--     type varchar(2),
+--     description text,
+--     score smallint,
+--     org_country text,
+--     from_date date,
+--     to_date date,
+--     date_modified timestamp WITHOUT time zone,
+--     affectedcountries text,
+--     severity double precision,
+--     severitytext text,
+--     severityunit varchar(10),
+--     iscurrent boolean,
+--     geom_url text,
+--     report_url text,
+--     CONSTRAINT gdacs_unique UNIQUE (id)
+-- );
+
+-- CREATE TABLE firms_viirs_noaa20_nrt (
+--     id serial PRIMARY KEY,
+--     latitude double precision NOT NULL,
+--     longitude double precision NOT NULL,
+--     bright_ti4 double precision,
+--     scan double precision,
+--     track double precision,
+--     acq_date date,
+--     acq_time integer,
+--     satellite varchar(10),
+--     instrument varchar(10),
+--     confidence varchar(3),
+--     version varchar(10),
+--     bright_ti5 double precision,
+--     frp double precision,
+--     daynight char(1),
+--     CONSTRAINT viirs_noaa20_unique UNIQUE (latitude, longitude, acq_date, acq_time, satellite, instrument, confidence, frp)
+-- );
+
+-- CREATE TABLE firms_viirs_noaa21_nrt (
+--     id serial PRIMARY KEY,
+--     latitude double precision NOT NULL,
+--     longitude double precision NOT NULL,
+--     bright_ti4 double precision,
+--     scan double precision,
+--     track double precision,
+--     acq_date date,
+--     acq_time integer,
+--     satellite varchar(10),
+--     instrument varchar(10),
+--     confidence varchar(3),
+--     version varchar(10),
+--     bright_ti5 double precision,
+--     frp double precision,
+--     daynight char(1),
+--     CONSTRAINT viirs_noaa21_unique UNIQUE (latitude, longitude, acq_date, acq_time, satellite, instrument, confidence, frp)
+-- );
+
+-- CREATE TABLE firms_viirs_snpp_nrt (
+--     id serial PRIMARY KEY,
+--     latitude double precision NOT NULL,
+--     longitude double precision NOT NULL,
+--     bright_ti4 double precision,
+--     scan double precision,
+--     track double precision,
+--     acq_date date,
+--     acq_time integer,
+--     satellite varchar(10),
+--     instrument varchar(10),
+--     confidence varchar(3),
+--     version varchar(10),
+--     bright_ti5 double precision,
+--     frp double precision,
+--     daynight char(1),
+--     CONSTRAINT viirs_snpp_unique UNIQUE (latitude, longitude, acq_date, acq_time, satellite, instrument, confidence, frp)
+-- );
+
+-- CREATE TABLE firms_modis_nrt (
+--     id serial PRIMARY KEY,
+--     latitude double precision NOT NULL,
+--     longitude double precision NOT NULL,
+--     bright_ti4 double precision,
+--     scan double precision,
+--     track double precision,
+--     acq_date date,
+--     acq_time integer,
+--     satellite varchar(10),
+--     instrument varchar(10),
+--     confidence varchar(3),
+--     version varchar(10),
+--     bright_ti5 double precision,
+--     frp double precision,
+--     daynight char(1),
+--     CONSTRAINT modis_unique UNIQUE (latitude, longitude, acq_date, acq_time, satellite, instrument, confidence, frp)
+-- );
+
+-- CREATE TABLE firms_goes_nrt (
+--     id serial PRIMARY KEY,
+--     latitude double precision NOT NULL,
+--     longitude double precision NOT NULL,
+--     bright_ti4 double precision,
+--     scan double precision,
+--     track double precision,
+--     acq_date date,
+--     acq_time integer,
+--     satellite varchar(10),
+--     instrument varchar(10),
+--     confidence varchar(3),
+--     version varchar(10),
+--     bright_ti5 double precision,
+--     frp double precision,
+--     daynight char(1),
+--     CONSTRAINT goes_unique UNIQUE (latitude, longitude, acq_date, acq_time, satellite, instrument, confidence, frp)
+-- );

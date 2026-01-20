@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DisasterViz Dashboard</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <header>
+    <div class="header-left">
+        🌍 <span class="header-title">DisasterViz</span>
+    </div>
+
+    <div class="header-right">
+        <div class="header-about">
+        <p>A disaster visualization platform for all around asia with information about disasters taken from official and trustworthy sources.</p>
+        </div>
+        <nav class="header-nav">
+        <a href="#">Home</a>
+        <a href="#">About</a>
+        <a href="#">Sources</a>
+        <a href="#">Contact</a>
+        </nav>
+    </div>
+    </header>
+
+  <div id="map"></div>
+
+  <footer>
+    <div class="footer-content">
+      <div class="footer-section about">
+        <h3>About</h3>
+        <p>
+            DisasterViz is an open-source global disaster visualization project combining
+            NASA FIRMS and USGS data in real-time. The platform aims to make disaster awareness
+            more accessible through transparent, real-time geospatial visualizations.
+        </p>
+      </div>
+
+      <div class="footer-section data">
+        <h3>Data Sources</h3>
+        <ul>
+          <li><a href="https://firms.modaps.eosdis.nasa.gov/">NASA FIRMS</a></li>
+          <li><a href="https://earthquake.usgs.gov/">USGS Earthquake Hazards</a></li>
+          <li><a href="https://gdacs.org/">GDACS</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-section connect">
+        <h3>Connect</h3>
+        <ul>
+          <li><a href="#">GitHub</a></li>
+          <li><a href="#">Twitter</a></li>
+          <li><a href="#">Email</a></li>
+          <li><a href="#">LinkedIn</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      © 2026 DisasterViz | Built with ❤️ using Leaflet & OpenStreetMap
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="js/script.js"></script>
+</body>
+</html>
