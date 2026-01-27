@@ -29,7 +29,7 @@ while True:
         data = response.json()
 
         #storing it for further data analysis, if neccesary
-        with open('data/gdacs.json', 'w', encoding='utf-8') as f:
+        with open('gdacs.json', 'w', encoding='utf-8') as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
 
         latest = {}
