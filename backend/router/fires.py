@@ -1,1 +1,43 @@
- 
+# Router for FIRMS fire endpoints
+
+from fastapi import APIRouter, HTTPException, Query
+from db import pool
+
+router = APIRouter(prefix="/firms_fires", tags=["fires"])
+
+VALID_SOURCES = {
+    "goes":  "firms_goes_nrt",
+    "modis": "firms_modis_nrt",
+    "noaa20": "firms_viirs_noaa20_nrt",
+    "noaa21": "firms_viirs_noaa21_nrt",
+    "snpp":  "firms_viirs_snpp_nrt",
+}
+
+
+@router.get("")
+def get_fires(source: str = Query(..., description="Satellite source: goes, modis, noaa20, noaa21, snpp")):
+    if source not in VALID_SOURCES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid source '{source}'. Valid options: {list(VALID_SOURCES.keys())}"
+        )
+
+    table = VALID_SOURCES[source]
+    conn = pool.getconn()
+    try:
+        cur = conn.cursor()
+        cur.execute(f"SELECT latitude, longitude, confidence FROM {table}")
+        rows = cur.fetchall()
+        cur.close()
+        return [
+            {
+                "lat":        r[0],
+                "lng":        r[1],
+                "confidence": r[2],
+            }
+            for r in rows
+        ]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        pool.putconn(conn)
