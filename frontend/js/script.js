@@ -6,7 +6,13 @@ var map = L.map("map", {
     minZoom: 3,
     maxZoom: 14,
     zoomControl: true,
+    worldCopyJump: false,
 }).setView([22, 90], 4);
+
+map.setMaxBounds([
+    [-90, -180],
+    [90, 180]
+]);
 
 var tileDark = L.tileLayer(
     "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
