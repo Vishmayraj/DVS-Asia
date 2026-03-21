@@ -5,8 +5,13 @@ const API_BASE = "https://dvs-api.onrender.com";
 var map = L.map("map", {
     minZoom: 3,
     maxZoom: 14,
-    zoomControl: true,
+    zoomControl: false,
+    worldCopyJump: false,
 }).setView([22, 90], 4);
+
+map.setMaxBounds([[-90, -180], [90, 180]]);
+
+var canvasRenderer = L.canvas({ padding: 0.5 });
 
 var tileDark = L.tileLayer(
     "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
@@ -291,6 +296,7 @@ function renderFires() {
             fillColor:   color,
             weight:      0.5,
             fillOpacity: 0.5,
+            renderer: canvasRenderer,
         });
 
         rect.on("mouseover", () => rect.setStyle({ fillOpacity: 0.85 }));
@@ -426,6 +432,7 @@ function renderGDACS() {
 
             layer.addTo(layers.gdacs);
             visible++;
+
         } catch (e) {
             console.warn(`Could not render GDACS event ${event.id}:`, e);
         }
