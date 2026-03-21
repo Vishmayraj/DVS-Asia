@@ -1,6 +1,23 @@
+# environment
 .env
-.obsidian
-check.py
+
+# python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# runtime state
 required/hashes.json
-backend/quicksqlsnippets
-backend/__pycache__
+
+# editor / IDE
+.obsidian/
+.vscode/
+.idea/
+
+# personal notes
+backend/quicksqlsnippets/
+
+# os
+.DS_Store
+Thumbs.db
