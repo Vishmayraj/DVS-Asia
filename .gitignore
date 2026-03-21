@@ -1,3 +1,4 @@
 .env
 .obsidian
 check.py
+required/hashes.json
