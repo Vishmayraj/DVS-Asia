@@ -13,7 +13,7 @@ services:
     build: .
     env_file:
       - .env
-    command: python backend/ins_eq.py
+    command: python backend/ingestion/ins_eq.py
     restart: unless-stopped
     depends_on:
       - api
@@ -22,7 +22,7 @@ services:
     build: .
     env_file:
       - .env
-    command: python backend/ins_fires.py
+    command: python backend/ingestion/ins_fires.py
     restart: unless-stopped
     depends_on:
       - api
@@ -31,7 +31,7 @@ services:
     build: .
     env_file:
       - .env
-    command: python backend/ins_gdacs.py
+    command: python backend/ingestion/ins_gdacs.py
     restart: unless-stopped
     depends_on:
       - api

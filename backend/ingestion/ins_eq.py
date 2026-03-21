@@ -16,7 +16,7 @@ USGS_URL = (
     "&minlongitude=25&maxlongitude=170"
 )
 
-env_path = Path(__file__).resolve().parent.parent / ".env"
+env_path = Path(__file__).resolve().parent.parent.parent / ".env"
 load_dotenv(env_path)
 
 while True:
@@ -24,6 +24,7 @@ while True:
     try:
         conn = psycopg2.connect(
             host=os.getenv("DB_HOST"),
+            port=int(os.getenv("DB_PORT", 5432)),
             dbname=os.getenv("DB_NAME"),
             user=os.getenv("DB_USER"),
             password=os.getenv("DB_PASS")

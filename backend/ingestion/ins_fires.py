@@ -31,13 +31,11 @@ COLUMNS = [
     "confidence", "version", "bright_ti5", "frp", "daynight",
 ]
 
-env_path = Path(__file__).resolve().parent.parent / ".env"
+env_path = Path(__file__).resolve().parent.parent.parent / ".env"
 load_dotenv(env_path)
 MAP_KEY = os.getenv("MAP_KEY")
 
-HASHES_PATH = Path(__file__).resolve().parent.parent / "required" / "hashes.json"
-
-HASHES_PATH.parent.mkdir(parents=True, exist_ok=True)
+HASHES_PATH = Path(__file__).resolve().parent.parent.parent / "required" / "hashes.json"
 
 if HASHES_PATH.exists():
     with open(HASHES_PATH, "r") as f:
@@ -52,6 +50,7 @@ while True:
     try:
         conn = psycopg2.connect(
             host=os.getenv("DB_HOST"),
+            port=int(os.getenv("DB_PORT", 5432)),
             dbname=os.getenv("DB_NAME"),
             user=os.getenv("DB_USER"),
             password=os.getenv("DB_PASS")
