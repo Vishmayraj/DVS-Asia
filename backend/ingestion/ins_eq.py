@@ -3,12 +3,14 @@
 import psycopg2
 import requests
 import os
+import sys
 from datetime import datetime, timezone
 from dotenv import load_dotenv
 import time
 from pathlib import Path
 
 WAIT_TIME = 30
+RUN_ONCE = "--once" in sys.argv
 USGS_URL = (
     "https://earthquake.usgs.gov/fdsnws/event/1/query"
     "?format=geojson"
@@ -70,7 +72,6 @@ while True:
                 else:
                     inserted += 1
 
-        # move rows older than 30 days to archive, then remove from live
         cur.execute("""
             INSERT INTO earthquakes_archive
             SELECT * FROM earthquakes
@@ -88,7 +89,7 @@ while True:
         conn.commit()
         cur.close()
 
-        print(f"inserted={inserted} updated={updated} archived={archived} purged={purged} | waiting {WAIT_TIME}s...")
+        print(f"inserted={inserted} updated={updated} archived={archived} purged={purged} | {'done.' if RUN_ONCE else f'waiting {WAIT_TIME}s...'}")
 
     except requests.exceptions.Timeout:
         print("USGS request timed out, retrying...")
@@ -106,4 +107,6 @@ while True:
         if conn:
             conn.close()
 
+    if RUN_ONCE:
+        break
     time.sleep(WAIT_TIME)

@@ -1,0 +1,40 @@
+name: DVS Ingestion
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+
+    env:
+      DB_HOST: ${{ secrets.DB_HOST }}
+      DB_PORT: ${{ secrets.DB_PORT }}
+      DB_NAME: ${{ secrets.DB_NAME }}
+      DB_USER: ${{ secrets.DB_USER }}
+      DB_PASS: ${{ secrets.DB_PASS }}
+      MAP_KEY: ${{ secrets.MAP_KEY }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run earthquake ingestion
+        run: python backend/ingestion/ins_eq.py --once
+
+      - name: Run fire ingestion
+        run: python backend/ingestion/ins_fires.py --once
+
+      - name: Run GDACS ingestion
+        run: python backend/ingestion/ins_gdacs.py --once

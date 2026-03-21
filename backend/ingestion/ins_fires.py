@@ -8,6 +8,7 @@ from io import StringIO
 import time
 from datetime import datetime
 import os
+import sys
 from dotenv import load_dotenv
 import hashlib
 import requests
@@ -15,6 +16,7 @@ import json
 from pathlib import Path
 
 WAIT_TIME = 30
+RUN_ONCE = "--once" in sys.argv
 ASIA_COORDS = "25,-10,180,55"
 
 SOURCES = {
@@ -36,6 +38,7 @@ load_dotenv(env_path)
 MAP_KEY = os.getenv("MAP_KEY")
 
 HASHES_PATH = Path(__file__).resolve().parent.parent.parent / "required" / "hashes.json"
+HASHES_PATH.parent.mkdir(parents=True, exist_ok=True)
 
 if HASHES_PATH.exists():
     with open(HASHES_PATH, "r") as f:
@@ -136,5 +139,8 @@ while True:
         if conn:
             conn.close()
 
-    print(f"Cycle complete, waiting {WAIT_TIME}s...")
+    print(f"Cycle complete | {'done.' if RUN_ONCE else f'waiting {WAIT_TIME}s...'}")
+
+    if RUN_ONCE:
+        break
     time.sleep(WAIT_TIME)

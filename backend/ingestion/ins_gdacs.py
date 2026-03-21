@@ -3,12 +3,14 @@
 import requests
 import psycopg2
 import json
-from dotenv import load_dotenv
 import os
+import sys
+from dotenv import load_dotenv
 import time
 from pathlib import Path
 
 WAIT_TIME = 30
+RUN_ONCE = "--once" in sys.argv
 GDACS_URL = "https://www.gdacs.org/gdacsapi/api/events/geteventlist/MAP"
 SKIP_TYPES = {"EQ", "WF"}
 
@@ -42,7 +44,6 @@ while True:
         response.raise_for_status()
         data = response.json()
 
-        # keep only the latest version of each current event
         latest = {}
         for feature in data["features"]:
             p = feature["properties"]
@@ -121,7 +122,6 @@ while True:
 
         conn.commit()
 
-        # fetch geometry for any row that doesn't have it yet
         cur.execute("SELECT id, geom_url FROM gdacs_live WHERE geometry IS NULL")
         missing_geom = cur.fetchall()
 
@@ -137,14 +137,13 @@ while True:
 
         conn.commit()
 
-        # remove events that are no longer current
         cur.execute("DELETE FROM gdacs_live WHERE iscurrent = false")
         expired = cur.rowcount
 
         conn.commit()
         cur.close()
 
-        print(f"inserted={inserted} updated={updated} geom_fetched={geom_fetched} expired_removed={expired} | waiting {WAIT_TIME}s...")
+        print(f"inserted={inserted} updated={updated} geom_fetched={geom_fetched} expired_removed={expired} | {'done.' if RUN_ONCE else f'waiting {WAIT_TIME}s...'}")
 
     except requests.exceptions.Timeout:
         print("GDACS request timed out, retrying...")
@@ -162,4 +161,6 @@ while True:
         if conn:
             conn.close()
 
+    if RUN_ONCE:
+        break
     time.sleep(WAIT_TIME)
