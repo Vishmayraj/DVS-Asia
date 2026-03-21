@@ -25,6 +25,7 @@ tileDark.addTo(map);
 let layers = {
     earthquakes: L.layerGroup().addTo(map),
     fires:       L.layerGroup(),
+    gdacs:       L.layerGroup(),
 };
 
 // ── STATE ────────────────────────────────────────────────
@@ -35,6 +36,7 @@ let state = {
     satFilter:  "goes",
     eqData:     [],
     fireData:   [],
+    gdacData:   [],
     theme:      "dark",
 };
 
@@ -101,7 +103,7 @@ function showError(msg) {
 // ── SOURCE SELECTOR ───────────────────────────────────────
 
 function selectSource(src) {
-    if (src === "gdacs") return;
+    if (src === "gdacs" && document.querySelector('[data-source="gdacs"]').classList.contains("source-btn--soon")) return;
 
     state.source = src;
 
@@ -123,6 +125,9 @@ function selectSource(src) {
     } else if (src === "fires") {
         map.addLayer(layers.fires);
         loadFires(state.satFilter);
+    } else if (src === "gdacs") {
+        map.addLayer(layers.gdacs);
+        loadGDACS();
     }
 }
 
@@ -254,6 +259,101 @@ function renderFires() {
     });
 
     setStats(state.fireData.length, visible);
+}
+
+// ── GDACS ─────────────────────────────────────────────────
+
+const GDACS_COLORS = {
+    FL: "#60a5fa",
+    TC: "#a78bfa",
+    DR: "#fde68a",
+};
+
+const GDACS_LABELS = {
+    FL: "Flood",
+    TC: "Cyclone",
+    DR: "Drought",
+    VO: "Volcano",
+};
+
+async function loadGDACS() {
+    try {
+        const res = await fetch(`${API_BASE}/gdacs`);
+        if (!res.ok) throw new Error(`Server returned ${res.status}`);
+        state.gdacData = await res.json();
+        setLastUpdated();
+        renderGDACS();
+    } catch (err) {
+        showError(`GDACS: ${err.message}`);
+    }
+}
+
+function renderGDACS() {
+    layers.gdacs.clearLayers();
+    let visible = 0;
+
+    state.gdacData.forEach(event => {
+        if (!event.geometry) return;
+
+        const color = GDACS_COLORS[event.type] || "#94a3b8";
+        const label = GDACS_LABELS[event.type] || event.type;
+
+        try {
+            const layer = L.geoJSON(event.geometry, {
+                style: {
+                    color:       color,
+                    fillColor:   color,
+                    weight:      1.5,
+                    fillOpacity: 0.25,
+                    opacity:     0.9,
+                }
+            });
+
+            layer.bindTooltip(
+                `<b>${label}</b> · ${event.org_country}`,
+                { sticky: true }
+            );
+
+            layer.bindPopup(`
+                <div class="dvs-popup">
+                    <div class="dvs-popup-title">${label} — ${event.org_country}</div>
+                    <table class="dvs-popup-table">
+                        <tr>
+                            <td>Alert score</td>
+                            <td><span class="popup-mag">${event.score ?? "—"}</span></td>
+                        </tr>
+                        <tr>
+                            <td>Severity</td>
+                            <td>${event.severitytext || "—"}</td>
+                        </tr>
+                        <tr>
+                            <td>Affected</td>
+                            <td>${event.affectedcountries || "—"}</td>
+                        </tr>
+                        <tr>
+                            <td>From</td>
+                            <td>${event.from_date || "—"}</td>
+                        </tr>
+                        <tr>
+                            <td>To</td>
+                            <td>${event.to_date || "—"}</td>
+                        </tr>
+                        <tr>
+                            <td>Report</td>
+                            <td><a href="${event.report_url}" target="_blank" style="color:var(--teal)">View report</a></td>
+                        </tr>
+                    </table>
+                </div>
+            `);
+
+            layer.addTo(layers.gdacs);
+            visible++;
+        } catch (e) {
+            console.warn(`Could not render GDACS event ${event.id}:`, e);
+        }
+    });
+
+    setStats(state.gdacData.length, visible);
 }
 
 // ── INITIAL LOAD ──────────────────────────────────────────

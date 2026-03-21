@@ -15,7 +15,7 @@ def get_gdacs():
             SELECT id, type, description, score, org_country,
                    from_date, to_date, affectedcountries,
                    severity, severitytext, severityunit,
-                   geom_url, report_url
+                   geom_url, report_url, geometry
             FROM gdacs_live
             ORDER BY from_date DESC
         """)
@@ -23,19 +23,20 @@ def get_gdacs():
         cur.close()
         return [
             {
-                "id":               r[0],
-                "type":             r[1],
-                "description":      r[2],
-                "score":            r[3],
-                "org_country":      r[4],
-                "from_date":        r[5].isoformat() if r[5] else None,
-                "to_date":          r[6].isoformat() if r[6] else None,
+                "id":                r[0],
+                "type":              r[1],
+                "description":       r[2],
+                "score":             r[3],
+                "org_country":       r[4],
+                "from_date":         r[5].isoformat() if r[5] else None,
+                "to_date":           r[6].isoformat() if r[6] else None,
                 "affectedcountries": r[7],
-                "severity":         r[8],
-                "severitytext":     r[9],
-                "severityunit":     r[10],
-                "geom_url":         r[11],
-                "report_url":       r[12],
+                "severity":          r[8],
+                "severitytext":      r[9],
+                "severityunit":      r[10],
+                "geom_url":          r[11],
+                "report_url":        r[12],
+                "geometry":          r[13],
             }
             for r in rows
         ]
