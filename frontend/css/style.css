@@ -576,14 +576,14 @@ a:hover { text-decoration: underline; }
         flex-direction: column;
         align-items: center;
         gap: 4px;
-        position: absolute;
+        position: fixed;
         bottom: 0;
         left: 0;
         right: 0;
         background: var(--bg2);
         border-top: 1px solid var(--border);
         padding: 10px 0 12px;
-        z-index: 800;
+        z-index: 950;
         cursor: pointer;
     }
 
