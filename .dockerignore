@@ -1,0 +1,14 @@
+.env
+.git
+.gitignore
+.obsidian
+__pycache__
+*.pyc
+*.pyo
+frontend
+workflow
+required/hashes.json
+backend/quicksqlsnippets
+backend/__pycache__
+README.md
+docker-compose.yml

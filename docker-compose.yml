@@ -1,0 +1,37 @@
+services:
+
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    command: uvicorn backend.main:app --host 0.0.0.0 --port 8000
+    restart: unless-stopped
+
+  worker_eq:
+    build: .
+    env_file:
+      - .env
+    command: python backend/ins_eq.py
+    restart: unless-stopped
+    depends_on:
+      - api
+
+  worker_fires:
+    build: .
+    env_file:
+      - .env
+    command: python backend/ins_fires.py
+    restart: unless-stopped
+    depends_on:
+      - api
+
+  worker_gdacs:
+    build: .
+    env_file:
+      - .env
+    command: python backend/ins_gdacs.py
+    restart: unless-stopped
+    depends_on:
+      - api
