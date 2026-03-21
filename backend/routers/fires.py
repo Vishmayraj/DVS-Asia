@@ -26,7 +26,11 @@ def get_fires(source: str = Query(..., description="Satellite source: goes, modi
     conn = pool.getconn()
     try:
         cur = conn.cursor()
-        cur.execute(f"SELECT latitude, longitude, confidence FROM {table}")
+        cur.execute(f"""
+            SELECT latitude, longitude, confidence, frp,
+                   daynight, acq_date, acq_time, satellite, instrument
+            FROM {table}
+        """)
         rows = cur.fetchall()
         cur.close()
         return [
@@ -34,6 +38,12 @@ def get_fires(source: str = Query(..., description="Satellite source: goes, modi
                 "lat":        r[0],
                 "lng":        r[1],
                 "confidence": r[2],
+                "frp":        r[3],
+                "daynight":   r[4],
+                "acq_date":   str(r[5]) if r[5] else None,
+                "acq_time":   r[6],
+                "satellite":  r[7],
+                "instrument": r[8],
             }
             for r in rows
         ]

@@ -6,13 +6,7 @@ var map = L.map("map", {
     minZoom: 3,
     maxZoom: 14,
     zoomControl: true,
-    worldCopyJump: false,
 }).setView([22, 90], 4);
-
-map.setMaxBounds([
-    [-90, -180],
-    [90, 180]
-]);
 
 var tileDark = L.tileLayer(
     "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
@@ -235,7 +229,37 @@ function renderEarthquakes() {
     setStats(state.eqData.length, visible);
 }
 
-// ── FIRES (stub) ──────────────────────────────────────────
+// ── FIRES ─────────────────────────────────────────────────
+
+function fireColor(confidence) {
+    if (confidence != null && !isNaN(Number(confidence))) {
+        const c = Number(confidence);
+        if (c >= 80) return "#ef4444";
+        if (c >= 40) return "#fb923c";
+        return "#fde68a";
+    }
+    const c = (confidence || "").toLowerCase();
+    if (c === "high" || c === "h")    return "#ef4444";
+    if (c === "nominal" || c === "n") return "#fb923c";
+    return "#fde68a";
+}
+
+function confidenceDisplay(confidence) {
+    if (confidence != null && !isNaN(Number(confidence))) {
+        return `${Number(confidence)}%`;
+    }
+
+    const c = (confidence || "").toLowerCase();
+    if (c === "high" || c === "h")    return "High";
+    if (c === "nominal" || c === "n") return "Nominal";
+    return "Low";
+}
+
+function formatAcqTime(t) {
+    if (t == null) return "—";
+    const s = String(t).padStart(4, "0");
+    return `${s.slice(0, 2)}:${s.slice(2)} UTC`;
+}
 
 async function loadFires(source = "goes") {
     try {
@@ -255,12 +279,60 @@ function renderFires() {
 
     state.fireData.forEach(fire => {
         visible++;
-        const rect = L.rectangle([
-            [fire.lat - 0.05, fire.lng - 0.05],
-            [fire.lat + 0.05, fire.lng + 0.05]
-        ], { color: "#fb923c", weight: 0.5, fillOpacity: 0.55 });
 
-        rect.bindTooltip(`Fire detected · ${fire.confidence}% confidence`, { sticky: true });
+        const color = fireColor(fire.confidence);
+        const delta = 0.05;
+
+        const rect = L.rectangle([
+            [fire.lat - delta, fire.lng - delta],
+            [fire.lat + delta, fire.lng + delta]
+        ], {
+            color:       color,
+            fillColor:   color,
+            weight:      0.5,
+            fillOpacity: 0.5,
+        });
+
+        rect.on("mouseover", () => rect.setStyle({ fillOpacity: 0.85 }));
+        rect.on("mouseout",  () => rect.setStyle({ fillOpacity: 0.5 }));
+
+        rect.bindTooltip(
+            `🔥 ${fire.satellite || "Fire"} · ${confidenceDisplay(fire.confidence)} confidence`,
+            { sticky: true }
+        );
+
+        rect.bindPopup(`
+            <div class="dvs-popup">
+                <div class="dvs-popup-title">Fire detection · ${fire.satellite || "—"}</div>
+                <table class="dvs-popup-table">
+                    <tr>
+                        <td>Confidence</td>
+                        <td><span class="popup-mag">${confidenceDisplay(fire.confidence)}</span></td>
+                    </tr>
+                    <tr>
+                        <td>FRP</td>
+                        <td>${fire.frp != null ? fire.frp.toFixed(1) + " MW" : "—"}</td>
+                    </tr>
+                    <tr>
+                        <td>Acquired</td>
+                        <td>${fire.acq_date || "—"} ${formatAcqTime(fire.acq_time)}</td>
+                    </tr>
+                    <tr>
+                        <td>Day / Night</td>
+                        <td>${fire.daynight === "D" ? "Day" : fire.daynight === "N" ? "Night" : "—"}</td>
+                    </tr>
+                    <tr>
+                        <td>Instrument</td>
+                        <td>${fire.instrument || "—"}</td>
+                    </tr>
+                    <tr>
+                        <td>Location</td>
+                        <td style="color:var(--text-3);font-size:0.7rem">${fire.lat.toFixed(4)}, ${fire.lng.toFixed(4)}</td>
+                    </tr>
+                </table>
+            </div>
+        `);
+
         rect.addTo(layers.fires);
     });
 
