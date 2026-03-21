@@ -1,66 +1,191 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>DisasterViz Dashboard</title>
+    <title>DisasterViz — Asia</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
-    <header>
-        <div class="header-left">
-            🌍 <span class="header-title">DisasterViz</span>
-        </div>
-        <div class="header-right">
-            <div class="header-about">
-                <p>A disaster visualization platform for Asia with data from official sources.</p>
-            </div>
-            <nav class="header-nav">
-                <a href="#">Home</a>
-                <a href="#">About</a>
-                <a href="#">Sources</a>
-                <a href="#">Contact</a>
-            </nav>
-        </div>
-    </header>
 
-    <div id="map">
-        <div id="map-error"></div>
+    <div class="app-shell">
+
+        <!-- MAP -->
+        <div class="map-wrap">
+            <div id="map"></div>
+            <div id="map-error"></div>
+
+            <div class="map-wordmark">
+                <span class="wordmark-icon">◈</span>
+                <span class="wordmark-text">DisasterViz</span>
+            </div>
+
+            <!-- mobile only: bottom sheet handle -->
+            <div class="sheet-handle" id="sheet-handle" onclick="toggleSheet()">
+                <div class="sheet-pip"></div>
+                <span class="sheet-label" id="sheet-label">Show panel</span>
+            </div>
+        </div>
+
+        <!-- SIDEBAR -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-inner">
+
+                <div class="sidebar-head">
+                    <div>
+                        <div class="sidebar-title">Control Panel</div>
+                        <div class="sidebar-sub" id="last-updated">No data loaded</div>
+                    </div>
+                    <button class="theme-btn" onclick="toggleTheme()" title="Toggle theme">
+                        <span id="theme-icon">☀</span>
+                    </button>
+                </div>
+
+                <div class="divider"></div>
+
+                <div class="section-label">Data source</div>
+                <div class="source-grid">
+                    <button class="source-btn active" data-source="earthquakes" onclick="selectSource('earthquakes')">
+                        <span class="source-icon">⬡</span>
+                        <span>Earthquakes</span>
+                    </button>
+                    <button class="source-btn" data-source="fires" onclick="selectSource('fires')">
+                        <span class="source-icon">▲</span>
+                        <span>Fires</span>
+                    </button>
+                    <button class="source-btn source-btn--soon" data-source="gdacs" onclick="selectSource('gdacs')" title="Coming soon">
+                        <span class="source-icon">◉</span>
+                        <span>GDACS</span>
+                        <span class="soon-badge">soon</span>
+                    </button>
+                </div>
+
+                <div class="sub-filter" id="filter-earthquakes">
+                    <div class="section-label">Magnitude filter</div>
+                    <div class="filter-pills">
+                        <button class="pill active" data-mag="all"   onclick="setMagFilter('all')">All</button>
+                        <button class="pill" data-mag="mag5" onclick="setMagFilter('mag5')">M5+</button>
+                        <button class="pill" data-mag="mag6" onclick="setMagFilter('mag6')">M6+</button>
+                        <button class="pill" data-mag="mag7" onclick="setMagFilter('mag7')">M7+</button>
+                    </div>
+                </div>
+
+                <div class="sub-filter hidden" id="filter-fires">
+                    <div class="section-label">Satellite source</div>
+                    <div class="filter-pills">
+                        <button class="pill active" data-sat="goes"   onclick="setSatFilter('goes')">GOES</button>
+                        <button class="pill" data-sat="modis"  onclick="setSatFilter('modis')">MODIS</button>
+                        <button class="pill" data-sat="noaa20" onclick="setSatFilter('noaa20')">NOAA-20</button>
+                        <button class="pill" data-sat="noaa21" onclick="setSatFilter('noaa21')">NOAA-21</button>
+                        <button class="pill" data-sat="snpp"   onclick="setSatFilter('snpp')">SNPP</button>
+                    </div>
+                </div>
+
+                <div class="divider"></div>
+
+                <div class="section-label">Live stats</div>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-num" id="stat-count">—</div>
+                        <div class="stat-lbl">Events loaded</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-num" id="stat-visible">—</div>
+                        <div class="stat-lbl">Visible on map</div>
+                    </div>
+                </div>
+
+                <div class="divider"></div>
+
+                <div class="section-label">Legend</div>
+                <div class="legend" id="legend-earthquakes">
+                    <div class="legend-row">
+                        <span class="leg-dot" style="background:#22d3b8;width:6px;height:6px;"></span>
+                        <span>M &lt; 4</span>
+                    </div>
+                    <div class="legend-row">
+                        <span class="leg-dot" style="background:#facc15;width:8px;height:8px;"></span>
+                        <span>M 4 – 5</span>
+                    </div>
+                    <div class="legend-row">
+                        <span class="leg-dot" style="background:#fb923c;width:10px;height:10px;"></span>
+                        <span>M 5 – 6</span>
+                    </div>
+                    <div class="legend-row">
+                        <span class="leg-dot" style="background:#f87171;width:12px;height:12px;"></span>
+                        <span>M 6 – 7</span>
+                    </div>
+                    <div class="legend-row">
+                        <span class="leg-dot" style="background:#ff1a1a;width:14px;height:14px;"></span>
+                        <span>M 7+</span>
+                    </div>
+                </div>
+                <div class="legend hidden" id="legend-fires">
+                    <div class="legend-row">
+                        <span class="leg-square" style="background:#fde68a;"></span>
+                        <span>Low confidence</span>
+                    </div>
+                    <div class="legend-row">
+                        <span class="leg-square" style="background:#fb923c;"></span>
+                        <span>Nominal / medium</span>
+                    </div>
+                    <div class="legend-row">
+                        <span class="leg-square" style="background:#ef4444;"></span>
+                        <span>High confidence</span>
+                    </div>
+                </div>
+
+                <div class="legend hidden" id="legend-gdacs">
+                    <div class="legend-row">
+                        <span class="leg-square" style="background:#60a5fa;"></span>
+                        <span>Flood</span>
+                    </div>
+                    <div class="legend-row">
+                        <span class="leg-square" style="background:#a78bfa;"></span>
+                        <span>Cyclone</span>
+                    </div>
+                    <div class="legend-row">
+                        <span class="leg-square" style="background:#fde68a;"></span>
+                        <span>Drought</span>
+                    </div>
+                </div>
+
+                <div class="divider"></div>
+
+                <div class="section-label">Data sources</div>
+                <div class="credits">
+                    <a href="https://earthquake.usgs.gov/" target="_blank" class="credit-row">
+                        <span class="credit-dot usgs"></span>
+                        <span>USGS Earthquake Hazards</span>
+                    </a>
+                    <a href="https://firms.modaps.eosdis.nasa.gov/" target="_blank" class="credit-row">
+                        <span class="credit-dot nasa"></span>
+                        <span>NASA FIRMS</span>
+                    </a>
+                    <a href="https://gdacs.org/" target="_blank" class="credit-row">
+                        <span class="credit-dot gdacs"></span>
+                        <span>GDACS Global Alerts</span>
+                    </a>
+                </div>
+
+                <div class="sidebar-footer">
+                    <span>Built by Zala Vishmayraj</span>
+                    <div class="footer-socials">
+                        <a href="https://github.com/Vishmayraj/DVS-Asia" target="_blank">GitHub</a>
+                        <span class="footer-dot">·</span>
+                        <a href="https://www.instagram.com/notsoteekhipanipuri/" target="_blank">Instagram</a>
+                        <span class="footer-dot">·</span>
+                        <a href="https://www.linkedin.com/in/vishmayraj-zala-121018336/" target="_blank">LinkedIn</a>
+                    </div>
+                </div>
+
+            </div>
+        </aside>
+
     </div>
-
-    <footer>
-        <div class="footer-content">
-            <div class="footer-section about">
-                <h3>About</h3>
-                <p>
-                    DisasterViz is an open-source disaster visualization project combining
-                    NASA FIRMS and USGS data in real-time. Built for transparent, accessible
-                    geospatial disaster awareness.
-                </p>
-            </div>
-            <div class="footer-section data">
-                <h3>Data Sources</h3>
-                <ul>
-                    <li><a href="https://firms.modaps.eosdis.nasa.gov/">NASA FIRMS</a></li>
-                    <li><a href="https://earthquake.usgs.gov/">USGS Earthquake Hazards</a></li>
-                    <li><a href="https://gdacs.org/">GDACS</a></li>
-                </ul>
-            </div>
-            <div class="footer-section connect">
-                <h3>Connect</h3>
-                <ul>
-                    <li><a href="#">GitHub</a></li>
-                    <li><a href="#">Twitter</a></li>
-                    <li><a href="#">Email</a></li>
-                    <li><a href="#">LinkedIn</a></li>
-                </ul>
-            </div>
-        </div>
-        <div class="footer-bottom">
-            © 2026 DisasterViz | Built with ❤️ using Leaflet &amp; OpenStreetMap
-        </div>
-    </footer>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="js/script.js"></script>
