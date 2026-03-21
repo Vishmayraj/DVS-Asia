@@ -37,6 +37,8 @@ MAP_KEY = os.getenv("MAP_KEY")
 
 HASHES_PATH = Path(__file__).resolve().parent.parent / "required" / "hashes.json"
 
+HASHES_PATH.parent.mkdir(parents=True, exist_ok=True)
+
 if HASHES_PATH.exists():
     with open(HASHES_PATH, "r") as f:
         last_hashes = json.load(f)
