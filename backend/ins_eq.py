@@ -3,61 +3,106 @@
 import psycopg2
 import requests
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from dotenv import load_dotenv
 import time
 from pathlib import Path
-from datetime import timezone
 
-wait_time = 30
+WAIT_TIME = 30
+USGS_URL = (
+    "https://earthquake.usgs.gov/fdsnws/event/1/query"
+    "?format=geojson"
+    "&minlatitude=-10&maxlatitude=80"
+    "&minlongitude=25&maxlongitude=170"
+)
 
-#getting db metadata from .env
 env_path = Path(__file__).resolve().parent.parent / ".env"
 load_dotenv(env_path)
-conn = psycopg2.connect(
-    host = os.getenv("DB_HOST"),
-    dbname = os.getenv("DB_NAME"),
-    user = os.getenv("DB_USER"),
-    password = os.getenv("DB_PASS")
-)
-cur = conn.cursor()
 
 while True:
+    conn = None
     try:
-        #implementing live data retrieval logic
-        url = "https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&minlatitude=-10&maxlatitude=80&minlongitude=25&maxlongitude=170"
-        response = requests.get(url)
+        conn = psycopg2.connect(
+            host=os.getenv("DB_HOST"),
+            dbname=os.getenv("DB_NAME"),
+            user=os.getenv("DB_USER"),
+            password=os.getenv("DB_PASS")
+        )
+        cur = conn.cursor()
+
+        response = requests.get(USGS_URL, timeout=15)
         response.raise_for_status()
         data = response.json()
 
-        for feature in data['features']:
-            prop = feature['properties']
-            geom = feature['geometry']['coordinates']
+        inserted = 0
+        updated = 0
 
-            quake_id = feature['id']
+        for feature in data["features"]:
+            prop = feature["properties"]
+            geom = feature["geometry"]["coordinates"]
+
+            quake_id = feature["id"]
             longitude, latitude, depth = geom
-            quake_mag = prop.get('mag')
-            sig = prop.get('sig')
-            magtype = prop.get('magType')
-            tsunami = prop.get('tsunami', 0)
-            place = prop.get('place', 'Unknown')
-
-            quake_time = datetime.fromtimestamp(prop['time']/1000.0, tz=timezone.utc)
+            mag = prop.get("mag")
+            sig = prop.get("sig")
+            magtype = prop.get("magType")
+            tsunami = prop.get("tsunami", 0)
+            place = prop.get("place", "Unknown")
+            quake_time = datetime.fromtimestamp(prop["time"] / 1000.0, tz=timezone.utc)
 
             cur.execute("""
-                INSERT INTO earthquakes (id, latitude, time, longitude, depth, mag, magtype, tsunami, sig, place)
+                INSERT INTO earthquakes
+                    (id, latitude, time, longitude, depth, mag, magtype, tsunami, sig, place)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                ON CONFLICT (id) DO NOTHING
-            """, (quake_id, latitude, quake_time, longitude, depth, quake_mag, magtype, tsunami, sig, place))
+                ON CONFLICT (id) DO UPDATE
+                    SET mag     = EXCLUDED.mag,
+                        place   = EXCLUDED.place,
+                        sig     = EXCLUDED.sig,
+                        magtype = EXCLUDED.magtype
+                    WHERE earthquakes.mag IS DISTINCT FROM EXCLUDED.mag
+                       OR earthquakes.place IS DISTINCT FROM EXCLUDED.place
+            """, (quake_id, latitude, quake_time, longitude, depth, mag, magtype, tsunami, sig, place))
+
+            if cur.rowcount == 1:
+                if cur.statusmessage.startswith("UPDATE"):
+                    updated += 1
+                else:
+                    inserted += 1
+
+        # move rows older than 30 days to archive, then remove from live
+        cur.execute("""
+            INSERT INTO earthquakes_archive
+            SELECT * FROM earthquakes
+            WHERE time < NOW() - INTERVAL '30 days'
+            ON CONFLICT (id) DO NOTHING
+        """)
+        archived = cur.rowcount
+
+        cur.execute("""
+            DELETE FROM earthquakes
+            WHERE time < NOW() - INTERVAL '30 days'
+        """)
+        purged = cur.rowcount
 
         conn.commit()
-        
-        print(f"Success, waiting for {wait_time}s...")
-        time.sleep(wait_time)
+        cur.close()
+
+        print(f"inserted={inserted} updated={updated} archived={archived} purged={purged} | waiting {WAIT_TIME}s...")
+
+    except requests.exceptions.Timeout:
+        print("USGS request timed out, retrying...")
+
+    except requests.exceptions.RequestException as e:
+        print(f"Network error: {e}")
+
+    except psycopg2.Error as e:
+        print(f"DB error: {e}")
 
     except Exception as e:
-        print('Error: ', e)
-        time.sleep(wait_time)
+        print(f"Unexpected error: {e}")
 
-cur.close()
-conn.close()
+    finally:
+        if conn:
+            conn.close()
+
+    time.sleep(WAIT_TIME)
