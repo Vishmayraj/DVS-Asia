@@ -1,168 +1,291 @@
-# 🔥 **DVS — Disaster Visualization System**
+# DisasterViz -> Asia
 
-_A living pipeline turning chaos into structured, real-time data._
+> Real-time disaster visualization for Asia. Satellite fire detections, seismic events, and global alerts -> unified, deduplicated, and mapped live.
 
----
-
-## 🌍 What It Is
-
-**DVS** ingests and cleans **satellite fire** and **earthquake** data (and soon floods, cyclones, droughts), storing it in **PostgreSQL** with full deduplication and change detection.  
-It began as a test script and evolved into a modular **data ingestion engine** — ready to power live, map-based disaster dashboards.
+**Live:** `https://dvs-asia.onrender.com` *(deploying soon)*
 
 ---
 
-## 🔥 FIRMS Fire Pipeline (NASA)
+## What it does
 
-Pulls **near-real-time fire detections** from NASA’s FIRMS API.  
-Handles 5 independent satellite feeds:
+Most disaster data is public. NASA publishes satellite fire detections every few minutes. USGS streams every earthquake globally. GDACS aggregates floods, cyclones, and droughts in real time. But each source has a different format, a different API, and no unified way to visualize them together.
 
-|Source|Satellite|Purpose|
-|---|---|---|
-|VIIRS_NOAA20_NRT|NOAA-20|Near-Real-Time VIIRS|
-|VIIRS_NOAA21_NRT|NOAA-21|Newer VIIRS|
-|VIIRS_SNPP_NRT|Suomi NPP|Legacy VIIRS|
-|MODIS_NRT|Terra/Aqua|MODIS sensor data|
-|GOES_NRT|Geostationary|Rapid updates|
-
-Each has its own SQL table (`firms_viirs_noaa20_nrt`, etc.) to isolate updates and debugging.
-
-**Schema Highlights:**  
-`latitude`, `longitude`, `acq_date`, `acq_time`, `satellite`, `instrument`, `confidence`, `frp`, `daynight`, etc.
-
-**Deduplication:**  
-`UNIQUE (latitude, longitude, acq_date, acq_time, satellite, instrument, confidence, frp)`
-
-**Refresh Logic:**
-
-- Each feed’s CSV is hashed.
-    
-- If hash changes → table truncated + re-filled.
-    
-- Otherwise skipped.
-    
-- Hashes stored persistently in `/state/hashes.json`.
-    
-
-**Scope:** Asia (`60,5,150,55`)  
-**Update:** ~30 s loop  
-**Lifetime:** Current-day detections only  
-**Env:** `.env` → `MAP_KEY`, `DB_USER`, `DB_PASS`, `DB_NAME`
-
-_Result: 5 autonomous, self-deduplicating fire pipelines._
+DisasterViz pulls from all three, stores the data cleanly in PostgreSQL, and serves it through a FastAPI backend to a Leaflet map with color-coded markers, polygon carpets for affected areas, hover tooltips, and click-through detail popups.
 
 ---
 
-## 🌋 USGS Earthquake Pipeline
+## Architecture
 
-Ingests **global seismic events** (GeoJSON) from USGS, filtered for **Asia**:
+```
+┌─────────────────────────────────────────────────────┐
+│                   Data Sources                      │
+│   NASA FIRMS      USGS FDSNWS      GDACS API        │
+└────────┬──────────────┬────────────────┬────────────┘
+         │              │                │
+         ▼              ▼                ▼
+┌─────────────────────────────────────────────────────┐
+│              Ingestion Workers (Python)             │
+│   ins_fires.py    ins_eq.py    ins_gdacs.py         │
+│   (30s loop)      (30s loop)   (30s loop)           │
+└────────────────────────┬────────────────────────────┘
+                         │
+                         ▼
+┌─────────────────────────────────────────────────────┐
+│              PostgreSQL (Supabase)                  │
+│                                                     │
+│  firms_viirs_noaa20_nrt    earthquakes              │
+│  firms_viirs_noaa21_nrt    earthquakes_archive      │
+│  firms_viirs_snpp_nrt      gdacs_live               │
+│  firms_modis_nrt                                    │
+│  firms_goes_nrt                                     │
+└────────────────────────┬────────────────────────────┘
+                         │
+                         ▼
+┌─────────────────────────────────────────────────────┐
+│              FastAPI (Render)                       │
+│                                                     │
+│  GET /earthquakes          GET /firms_fires?source= │
+│  GET /earthquakes/archive  GET /gdacs               │
+│  GET /health                                        │
+└────────────────────────┬────────────────────────────┘
+                         │
+                         ▼
+┌─────────────────────────────────────────────────────┐
+│           Frontend (Leaflet + Vanilla JS)           │
+│   Dark/light theme · Sidebar · Mobile bottom sheet  │
+└─────────────────────────────────────────────────────┘
+```
 
-`minlat=-10, maxlat=80, minlon=25, maxlon=170`
-
-**Tables:**
-
-|Table|Purpose|
-|---|---|
-|`earthquakes`|Rolling 30-day live table|
-|`earthquakes_archive`|Permanent historical store|
-
-**Core Fields:**  
-`id`, `latitude`, `longitude`, `depth`, `mag`, `magtype`, `time`, `tsunami`, `sig`, `place`
-
-**Deduplication:**  
-`PRIMARY KEY (id)` → `ON CONFLICT DO NOTHING`
-
-**Loop:**  
-Fetch → insert into both tables → remove >30-day data from live.  
-**Update:** ~30 s  
-**Lifetime:** 30 days live / permanent archive  
-**Env:** same `.env` as above.
-
-_Result: clean, rolling seismic data that never duplicates or expires silently._
-
----
-
-## 🌐 GDACS Global Alerts Pipeline
-
-Pulls real-time alerts (floods, cyclones, droughts, etc.) from **GDACS**.
-
-**Event Types:** `FL`, `TC`, `DR` (+ others ignored)  
-**Key Fields:**  
-`id`, `type`, `description`, `score`, `org_country`, `from_date`, `to_date`, `date_modified`, `affectedcountries`, `severity`, `iscurrent`, `geom_url`, `report_url`
-
-**Rules:**
-
-- Keep only active (`iscurrent=true`) events
-    
-- Only latest `date_modified` per `id`
-    
-- Skip EQ/WF (handled elsewhere)
-    
-- Store geometry URLs, not polygons
-    
-- `UNIQUE (id, type)` ensures one active record per event
-    
-
-**Update:** every 10–30 s  
-**Scope:** Global  
-**Lifetime:** Only current disasters
-
-_Result: lightweight, continuously refreshed global feed._
+Three long-running Python workers ingest continuously. A FastAPI layer reads from the DB and serves JSON. A pure HTML/CSS/JS frontend fetches from the API and renders everything on a Leaflet map. No frameworks, no build step.
 
 ---
 
-## 🧩 Database Overview
+## Data pipelines
 
-All pipelines share one database: **`dvs`**  
-~16 MB for daily Asia-wide data — proof of efficient schema design.
+### Fire detections -> NASA FIRMS
 
-**Secrets:** stored in `.env`  
-Example:  
-`MAP_KEY=... DB_USER=postgres DB_HOST=... DB_PASS=... DB_NAME=dvs`
+NASA's Fire Information for Resource Management System publishes near-real-time fire detections from five independent satellite feeds:
 
----
+| Source | Satellite | Sensor |
+|--------|-----------|--------|
+| VIIRS_NOAA20_NRT | NOAA-20 | VIIRS |
+| VIIRS_NOAA21_NRT | NOAA-21 | VIIRS |
+| VIIRS_SNPP_NRT | Suomi NPP | VIIRS |
+| MODIS_NRT | Terra / Aqua | MODIS |
+| GOES_NRT | Geostationary | ABI |
 
-## 💡 Lessons
+Each feed is stored in its own table to isolate updates. The ingestion loop hashes each feed's CSV response. If the hash matches the previous cycle, the table is left untouched. If it changes, the table is truncated and refilled using a single `execute_values` batch insert (not row-by-row). This avoids unnecessary writes while keeping data current-day fresh.
 
-- FIRMS = 5 unique feeds, not one.
-    
-- Separate tables simplify scaling.
-    
-- `ON CONFLICT DO NOTHING` = pure serenity.
-    
-- Deduplication > disk space.
-    
-- Confidence = NASA’s probability model, not ours.
-    
-- Always check hashes before assuming “new data.”
-    
+VIIRS reports confidence as a category (`h`, `n`, `l`). MODIS and GOES report it as a percentage integer. Both are handled correctly on the frontend.
 
----
+Coverage: `25°W, 10°S` to `180°E, 55°N`, full Asia including Southeast Asia, Japan, and Indonesia.
 
-## 🚀 Next Steps
+### Earthquakes -> USGS
 
-- Unified **Leaflet/Mapbox** live map
-    
-- Auto-purge logic for older data
-    
-- REST API for visualization layers
-    
-- Multi-source disaster overlay
-    
+The USGS Earthquake Hazards program publishes a GeoJSON feed of seismic events queryable by bounding box. The pipeline fetches every 30 seconds, filtered to Asia (`-10° to 80°N`, `25° to 170°E`).
 
----
+**Two-table design:**
 
-## 🧠 Why DVS Exists
+- `earthquakes`: rolling 30-day live table. At the end of each cycle, events older than 30 days are moved to the archive and deleted from the live table.
+- `earthquakes_archive`: permanent historical store. Events land here exactly once (`ON CONFLICT DO NOTHING`), protected by a primary key.
 
-Despite NASA, USGS, and GDACS publishing everything,  
-no unified open system **ties it all together**.  
-Data formats clash, APIs throttle, and “real-time” often isn’t.
+USGS occasionally revises magnitude and location data after initial detection. The upsert uses `ON CONFLICT DO UPDATE` with a `WHERE IS DISTINCT FROM` guard. DVS only writes to the DB if `mag`, `place`, `sig`, or `magtype` actually changed.
 
-**DVS bridges that gap** — small, modular, regional, open-source,  
-designed for people who want clean disaster data that _just works_.
+### GDACS alerts -> floods, cyclones, droughts
+
+GDACS (Global Disaster Alert and Coordination System) publishes a GeoJSON event feed of active disasters. The pipeline filters out earthquakes and wildfires (handled by the other pipelines) and keeps only `iscurrent = true` events.
+
+**Geometry storage:** Rather than fetching polygon geometry from the browser on every map load, `ins_gdacs.py` fetches each event's geometry URL once and stores the raw GeoJSON as `jsonb` in the DB. On subsequent cycles, rows with geometry already populated are skipped. This means the browser never hits the GDACS polygon API directly, it gets pre-fetched geometry from the backend.
+
+GDACS geometry responses contain multiple features per event (`Point_Centroid`, `Poly_Affected`, `Poly_Global`). The frontend filters to `Poly_Affected` only when rendering. If no polygon exists, it falls back to the centroid point as a circle marker.
 
 ---
 
-**Built by Zala Vishmayraj ⚡**  
-_The planet never sleeps — neither should its data._
+## API
+
+The FastAPI backend uses `APIRouter` to separate concerns. All routes share a `psycopg2.pool.SimpleConnectionPool` (10 connections max), no new connection per request.
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /health` | Health check |
+| `GET /earthquakes` | Rolling 30-day seismic events |
+| `GET /earthquakes/archive` | Full historical archive |
+| `GET /firms_fires?source=goes\|modis\|noaa20\|noaa21\|snpp` | Fire detections by satellite |
+| `GET /gdacs` | Active disaster alerts with stored geometry |
 
 ---
+
+## Frontend
+
+Pure HTML, CSS, and JavaScript. No React, no bundler, no build step. Leaflet 1.9.4 for the map.
+
+**Design decisions:**
+
+- Sidebar layout on desktop (map 70%, panel 30%). On mobile, the sidebar becomes a bottom sheet that slides up from a pill handle, the map stays full screen underneath.
+- Dark and light themes, toggled in the sidebar. Switching theme also swaps the Leaflet tile layer between Carto Dark and Carto Light.
+- Earthquake markers encode magnitude in both size and color (teal < M4, yellow M4-5, orange M5-6, red M6-7, bright red M7+).
+- Fire rectangles encode confidence as color (yellow = low, orange = nominal/medium, red = high). VIIRS and MODIS/GOES use different confidence formats unified at render time.
+- GDACS events render as colored polygon carpets (flood = blue, cyclone = purple, drought = yellow) where geometry is available, falling back to a circle marker at the centroid.
+- Hover shows a summary tooltip. Click opens a detailed popup with all fields.
+- Map is bounded to prevent world-wrapping (`maxBounds`, `worldCopyJump: false`).
+
+---
+
+## Local setup
+
+### Prerequisites
+
+- Python 3.11+
+- PostgreSQL (local or Supabase)
+- NASA FIRMS API key, [register here](https://firms.modaps.eosdis.nasa.gov/api/area/)
+
+### 1. Clone and install
+
+```bash
+git clone https://github.com/Vishmayraj/DVS-Asia.git
+cd DVS-Asia
+pip install -r requirements.txt
+```
+
+### 2. Environment variables
+
+Create a `.env` file in the repo root:
+
+```env
+DB_HOST=localhost
+DB_NAME=dvs
+DB_USER=postgres
+DB_PASS=your_password
+MAP_KEY=your_nasa_firms_api_key
+```
+
+### 3. Database schema
+
+Connect to your PostgreSQL instance and run:
+
+```sql
+CREATE TABLE earthquakes (
+    id        text PRIMARY KEY,
+    latitude  double precision NOT NULL,
+    time      timestamp NOT NULL,
+    longitude double precision NOT NULL,
+    depth     double precision,
+    mag       real,
+    magtype   varchar(10),
+    tsunami   smallint,
+    sig       integer,
+    place     text
+);
+
+CREATE TABLE earthquakes_archive (
+    id        text PRIMARY KEY,
+    latitude  double precision NOT NULL,
+    time      timestamp NOT NULL,
+    longitude double precision NOT NULL,
+    depth     double precision,
+    mag       real,
+    magtype   varchar(10),
+    tsunami   smallint,
+    sig       integer,
+    place     text
+);
+
+CREATE TABLE firms_viirs_noaa20_nrt (
+    id         serial,
+    latitude   double precision,
+    longitude  double precision,
+    bright_ti4 real,
+    scan       real,
+    track      real,
+    acq_date   date,
+    acq_time   integer,
+    satellite  varchar(20),
+    instrument varchar(20),
+    confidence varchar(10),
+    version    varchar(10),
+    bright_ti5 real,
+    frp        real,
+    daynight   char(1)
+);
+
+-- repeat for firms_viirs_noaa21_nrt, firms_viirs_snpp_nrt,
+-- firms_modis_nrt, firms_goes_nrt (identical schema)
+
+CREATE TABLE gdacs_live (
+    id                integer,
+    type              varchar(2),
+    description       text,
+    score             smallint,
+    org_country       text,
+    from_date         date,
+    to_date           date,
+    date_modified     timestamp,
+    affectedcountries text,
+    severity          double precision,
+    severitytext      text,
+    severityunit      varchar(10),
+    iscurrent         boolean,
+    geom_url          text,
+    report_url        text,
+    geometry          jsonb,
+    CONSTRAINT gdacs_unique UNIQUE (id)
+);
+```
+
+### 4. Run the API
+
+```bash
+uvicorn backend.main:app --reload
+```
+
+API available at `http://127.0.0.1:8000`. Docs at `http://127.0.0.1:8000/docs`.
+
+### 5. Run the ingestion workers
+
+Each worker runs as a long-lived loop. Open three terminals:
+
+```bash
+python backend/ins_eq.py
+```
+
+```bash
+python backend/ins_fires.py
+```
+
+```bash
+python backend/ins_gdacs.py
+```
+
+### 6. Serve the frontend
+
+```bash
+python -m http.server 5500 --directory frontend
+```
+
+Open `http://localhost:5500`.
+
+---
+
+## Deployment
+
+- **API + workers:** Render (one web service for FastAPI, three background workers for ingestion)
+- **Database:** Supabase PostgreSQL -> use port `6543` (PgBouncer) not `5432` to stay within the free tier connection limit
+- **Frontend:** Render static site, or any static host
+
+Update `API_BASE` in `frontend/js/script.js` to your Render API URL before deploying the frontend.
+
+---
+
+## Data sources
+
+| Source | Provider | Update frequency |
+|--------|----------|-----------------|
+| [FIRMS NRT Fire Data](https://firms.modaps.eosdis.nasa.gov/) | NASA | ~10 minutes |
+| [Earthquake Catalog](https://earthquake.usgs.gov/fdsnws/event/1/) | USGS | ~1 minute |
+| [Global Disaster Alerts](https://www.gdacs.org/) | GDACS / EC JRC | ~15 minutes |
+
+---
+
+## Built by
+
+**Zala Vishmayraj** - [GitHub](https://github.com/Vishmayraj) · [Instagram](https://www.instagram.com/notsoteekhipanipuri/) · [LinkedIn](https://www.linkedin.com/in/vishmayraj-zala-121018336/)
