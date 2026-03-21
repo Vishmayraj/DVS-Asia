@@ -2,7 +2,7 @@
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import earthquakes, fires, gdacs
+from backend.routers import earthquakes, fires, gdacs
 
 app = FastAPI(title="DVS API", description="Disaster Visualization System — Asia")
 

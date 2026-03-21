@@ -1,7 +1,7 @@
 # Router for earthquake endpoints
 
 from fastapi import APIRouter, HTTPException
-from db import pool
+from backend.db import pool
 
 router = APIRouter(prefix="/earthquakes", tags=["earthquakes"])
 
@@ -12,7 +12,7 @@ def get_earthquakes():
     try:
         cur = conn.cursor()
         cur.execute("""
-            SELECT id, latitude, longitude, mag, place, time
+            SELECT id, latitude, longitude, mag, magtype, depth, tsunami, sig, place, time
             FROM earthquakes
             ORDER BY time DESC
         """)
@@ -20,12 +20,16 @@ def get_earthquakes():
         cur.close()
         return [
             {
-                "id":    r[0],
-                "lat":   r[1],
-                "lng":   r[2],
-                "mag":   r[3],
-                "place": r[4],
-                "time":  r[5].isoformat(),
+                "id":      r[0],
+                "lat":     r[1],
+                "lng":     r[2],
+                "mag":     r[3],
+                "magtype": r[4],
+                "depth":   r[5],
+                "tsunami": r[6],
+                "sig":     r[7],
+                "place":   r[8],
+                "time":    r[9].isoformat(),
             }
             for r in rows
         ]

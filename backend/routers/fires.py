@@ -1,7 +1,7 @@
 # Router for FIRMS fire endpoints
 
 from fastapi import APIRouter, HTTPException, Query
-from db import pool
+from backend.db import pool
 
 router = APIRouter(prefix="/firms_fires", tags=["fires"])
 

@@ -1,7 +1,7 @@
 # Router for GDACS alert endpoints
 
 from fastapi import APIRouter, HTTPException
-from db import pool
+from backend.db import pool
 
 router = APIRouter(prefix="/gdacs", tags=["gdacs"])
 
