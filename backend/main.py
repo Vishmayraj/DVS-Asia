@@ -20,5 +20,6 @@ app.include_router(gdacs.router)
 
 
 @app.get("/health", tags=["meta"])
+@app.head("/health", tags=["meta"])
 def health():
     return {"status": "ok"}

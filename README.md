@@ -2,7 +2,7 @@
 
 > Real-time disaster visualization for Asia. Satellite fire detections, seismic events, and global alerts -> unified, deduplicated, and mapped live.
 
-**Live:** `https://disasterviz.onrender.com/`
+**Live:** [disasterviz.onrender.com](https://disasterviz.onrender.com/)
 
 ---
 
@@ -24,9 +24,9 @@ DisasterViz pulls from all three, stores the data cleanly in PostgreSQL, and ser
          │              │                │
          ▼              ▼                ▼
 ┌─────────────────────────────────────────────────────┐
-│              Ingestion Workers (Python)             │
+│         GitHub Actions (cron every 30 min)          │
 │   ins_fires.py    ins_eq.py    ins_gdacs.py         │
-│   (30s loop)      (30s loop)   (30s loop)           │
+│   (--once flag, runs and exits per cycle)           │
 └────────────────────────┬────────────────────────────┘
                          │
                          ▼
@@ -56,7 +56,7 @@ DisasterViz pulls from all three, stores the data cleanly in PostgreSQL, and ser
 └─────────────────────────────────────────────────────┘
 ```
 
-Three long-running Python workers ingest continuously. A FastAPI layer reads from the DB and serves JSON. A pure HTML/CSS/JS frontend fetches from the API and renders everything on a Leaflet map. No frameworks, no build step.
+Ingestion runs as GitHub Actions cron jobs every 30 minutes. Each script accepts a `--once` flag to run a single cycle and exit, keeping Actions minutes usage low. A FastAPI layer reads from the DB and serves JSON. A pure HTML/CSS/JS frontend fetches from the API and renders everything on a Leaflet map. No frameworks, no build step.
 
 ---
 
@@ -82,7 +82,7 @@ Coverage: `25°W, 10°S` to `180°E, 55°N`, full Asia including Southeast Asia,
 
 ### Earthquakes -> USGS
 
-The USGS Earthquake Hazards program publishes a GeoJSON feed of seismic events queryable by bounding box. The pipeline fetches every 30 seconds, filtered to Asia (`-10° to 80°N`, `25° to 170°E`).
+The USGS Earthquake Hazards program publishes a GeoJSON feed of seismic events queryable by bounding box. The pipeline fetches every 30 minutes, filtered to Asia (`-10° to 80°N`, `25° to 170°E`).
 
 **Two-table design:**
 
@@ -124,7 +124,7 @@ Pure HTML, CSS, and JavaScript. No React, no bundler, no build step. Leaflet 1.9
 - Sidebar layout on desktop (map 70%, panel 30%). On mobile, the sidebar becomes a bottom sheet that slides up from a pill handle, the map stays full screen underneath.
 - Dark and light themes, toggled in the sidebar. Switching theme also swaps the Leaflet tile layer between Carto Dark and Carto Light.
 - Earthquake markers encode magnitude in both size and color (teal < M4, yellow M4-5, orange M5-6, red M6-7, bright red M7+).
-- Fire rectangles encode confidence as color (yellow = low, orange = nominal/medium, red = high). VIIRS and MODIS/GOES use different confidence formats unified at render time.
+- Fire rectangles encode confidence as color (yellow = low, orange = nominal/medium, red = high). VIIRS and MODIS/GOES use different confidence formats unified at render time. Canvas renderer used for 10k+ fire shapes to avoid DOM bottlenecks.
 - GDACS events render as colored polygon carpets (flood = blue, cyclone = purple, drought = yellow) where geometry is available, falling back to a circle marker at the centroid.
 - Hover shows a summary tooltip. Click opens a detailed popup with all fields.
 - Map is bounded to prevent world-wrapping (`maxBounds`, `worldCopyJump: false`).
@@ -240,20 +240,20 @@ uvicorn backend.main:app --reload
 
 API available at `http://127.0.0.1:8000`. Docs at `http://127.0.0.1:8000/docs`.
 
-### 5. Run the ingestion workers
+### 5. Run the ingestion scripts
 
-Each worker runs as a long-lived loop. Open three terminals:
+Each script accepts `--once` to run a single cycle and exit (used by GitHub Actions), or runs as a continuous loop by default. Open three terminals:
 
 ```bash
-python backend/ins_eq.py
+python backend/ingestion/ins_eq.py
 ```
 
 ```bash
-python backend/ins_fires.py
+python backend/ingestion/ins_fires.py
 ```
 
 ```bash
-python backend/ins_gdacs.py
+python backend/ingestion/ins_gdacs.py
 ```
 
 ### 6. Serve the frontend
@@ -268,11 +268,32 @@ Open `http://localhost:5500`.
 
 ## Deployment
 
-- **API + workers:** Render (one web service for FastAPI, three background workers for ingestion)
-- **Database:** Supabase PostgreSQL -> use port `6543` (PgBouncer) not `5432` to stay within the free tier connection limit
-- **Frontend:** Render static site, or any static host
+- **API:** Render web service (Docker, free tier)
+- **Ingestion:** GitHub Actions cron every 30 minutes (`.github/workflows/ingest.yml`)
+- **Database:** Supabase PostgreSQL -> use the session pooler host on port `5432` for Render compatibility
+- **Frontend:** Render static site
 
-Update `API_BASE` in `frontend/js/script.js` to your Render API URL before deploying the frontend.
+Add the following secrets to your GitHub repo under **Settings > Secrets and variables > Actions**:
+
+| Secret | Description |
+|--------|-------------|
+| `DB_HOST` | Supabase session pooler host |
+| `DB_PORT` | `5432` |
+| `DB_NAME` | `postgres` |
+| `DB_USER` | `postgres.[project-ref]` |
+| `DB_PASS` | Supabase password |
+| `MAP_KEY` | NASA FIRMS API key |
+
+---
+
+## Roadmap
+
+- Global coverage -> expand bounding boxes beyond Asia
+- Volcano pipeline -> USGS Volcano Hazards or Smithsonian GVP
+- Historical analytics -> query the archive table, show event frequency over time
+- Alert severity overlay -> GDACS alert level (green/orange/red) encoded in marker color
+- REST API pagination -> large earthquake archive responses need cursor-based pagination
+- Data analysis export -> re-add the GDACS raw JSON dump for offline analysis
 
 ---
 
