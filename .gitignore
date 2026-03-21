@@ -2,3 +2,5 @@
 .obsidian
 check.py
 required/hashes.json
+backend/quicksqlsnippets
+backend/__pycache__
