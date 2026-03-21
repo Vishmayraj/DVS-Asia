@@ -2,7 +2,7 @@
 
 > Real-time disaster visualization for Asia. Satellite fire detections, seismic events, and global alerts -> unified, deduplicated, and mapped live.
 
-**Live:** `https://dvs-asia.onrender.com` *(deploying soon)*
+**Live:** `https://disasterviz.onrender.com/`
 
 ---
 
