@@ -117,6 +117,10 @@ while True:
             if ev_type in SKIP_TYPES:
                 continue
 
+            geom_data = fetch_geometry(p["url"]["geometry"])
+            if geom_data:
+                geom_fetched += 1
+
             ev_id        = p["eventid"]
             desc         = p["htmldescription"]
             score        = p["alertscore"]
@@ -141,9 +145,9 @@ while True:
                     id, type, description, score, org_country,
                     from_date, to_date, date_modified, affectedcountries,
                     severity, severitytext, severityunit, iscurrent,
-                    geom_url, report_url
+                    geom_url, report_url, geometry
                 )
-                VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
                 ON CONFLICT ON CONSTRAINT gdacs_unique DO UPDATE
                     SET type              = EXCLUDED.type,
                         description       = EXCLUDED.description,
@@ -160,11 +164,12 @@ while True:
                         geom_url          = EXCLUDED.geom_url,
                         report_url        = EXCLUDED.report_url
                     WHERE gdacs_live.date_modified IS DISTINCT FROM EXCLUDED.date_modified
+                        OR (gdacs_live.geometry IS NULL AND EXCLUDED.geometry IS NOT NULL)
             """, (
                 ev_id, ev_type, desc, score, org_country,
                 fromdate, todate, datemodified, aff_countries,
                 severity, severitytext, severityunit, iscurrent,
-                geom_url, report_url
+                geom_url, report_url, json.dumps(geom_data) if geom_data else None
             ))
 
             if cur.rowcount == 1:
@@ -172,21 +177,6 @@ while True:
                     updated += 1
                 else:
                     inserted += 1
-
-        conn.commit()
-
-        cur.execute("SELECT id, geom_url FROM gdacs_live WHERE geometry IS NULL")
-        missing_geom = cur.fetchall()
-
-        for row_id, row_geom_url in missing_geom:
-            geom_data = fetch_geometry(row_geom_url)
-            if geom_data:
-                cur.execute(
-                    "UPDATE gdacs_live SET geometry = %s WHERE id = %s",
-                    (json.dumps(geom_data), row_id)
-                )
-                geom_fetched += 1
-                time.sleep(0.5)
 
         conn.commit()
 
