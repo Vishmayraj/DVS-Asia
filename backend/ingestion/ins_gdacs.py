@@ -162,7 +162,8 @@ while True:
                         severityunit      = EXCLUDED.severityunit,
                         iscurrent         = EXCLUDED.iscurrent,
                         geom_url          = EXCLUDED.geom_url,
-                        report_url        = EXCLUDED.report_url
+                        report_url        = EXCLUDED.report_url,
+                        geometry           = EXCLUDED.geometry
                     WHERE gdacs_live.date_modified IS DISTINCT FROM EXCLUDED.date_modified
                         OR (gdacs_live.geometry IS NULL AND EXCLUDED.geometry IS NOT NULL)
             """, (
