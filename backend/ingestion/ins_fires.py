@@ -12,7 +12,6 @@ import sys
 from dotenv import load_dotenv
 import hashlib
 import requests
-import json
 from pathlib import Path
 
 WAIT_TIME = 30
@@ -37,14 +36,22 @@ env_path = Path(__file__).resolve().parent.parent.parent / ".env"
 load_dotenv(env_path)
 MAP_KEY = os.getenv("MAP_KEY")
 
-HASHES_PATH = Path(__file__).resolve().parent.parent.parent / "required" / "hashes.json"
-HASHES_PATH.parent.mkdir(parents=True, exist_ok=True)
 
-if HASHES_PATH.exists():
-    with open(HASHES_PATH, "r") as f:
-        last_hashes = json.load(f)
-else:
-    last_hashes = {}
+def get_hash(cur, source):
+    cur.execute("SELECT hash FROM ingest_hashes WHERE source = %s", (source,))
+    row = cur.fetchone()
+    return row[0] if row else None
+
+
+def set_hash(cur, source, hash_value):
+    cur.execute("""
+        INSERT INTO ingest_hashes (source, hash, updated_at)
+        VALUES (%s, %s, now())
+        ON CONFLICT (source) DO UPDATE
+            SET hash = EXCLUDED.hash,
+                updated_at = now()
+    """, (source, hash_value))
+
 
 while True:
     today = datetime.now().date()
@@ -71,9 +78,9 @@ while True:
                 response.raise_for_status()
                 csv_data = response.text
 
-                new_hash = hashlib.md5(csv_data.encode("utf-8")).hexdigest()
+                new_hash = hashlib.sha256(csv_data.encode("utf-8")).hexdigest()
 
-                if last_hashes.get(src) == new_hash:
+                if get_hash(cur, src) == new_hash:
                     print(f"{src}: no change, skipping")
                     continue
 
@@ -85,7 +92,7 @@ while True:
 
                 missing = [c for c in COLUMNS if c not in df.columns]
                 if missing:
-                    print(f"{src}: unexpected schema, missing columns {missing}, skipping")
+                    print(f"{src}: unexpected schema, missing {missing}, skipping")
                     continue
 
                 rows = [tuple(row) for row in df[COLUMNS].itertuples(index=False)]
@@ -105,10 +112,7 @@ while True:
                     rows
                 )
 
-                last_hashes[src] = new_hash
-                with open(HASHES_PATH, "w") as f:
-                    json.dump(last_hashes, f)
-
+                set_hash(cur, src, new_hash)
                 conn.commit()
                 print(f"{src}: refreshed {len(rows)} rows for {today}")
 
