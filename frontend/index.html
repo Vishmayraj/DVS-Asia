@@ -3,11 +3,12 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>DisasterViz Asia — Real-time disaster visualization</title>
+    <title>DisasterViz Asia — Asia's disasters, mapped live</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/home.css"/>
     <script defer src="https://cloud.umami.is/script.js" data-website-id="79757868-4fea-414b-a9b0-f7a9fc9d5c7b"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@floating-ui/dom@1.6.3/dist/floating-ui.dom.umd.min.js"></script>
 </head>
 <body>
 
@@ -20,8 +21,36 @@
             </a>
             <div class="nav-links">
                 <a href="index.html" class="nav-link nav-link--active">Home</a>
-                <a href="explorer.html" class="nav-link">Explorer</a>
+                <button class="nav-link nav-link--dropdown" id="nav-explorer-btn" aria-expanded="false">
+                    Explorer <span class="nav-chevron">▾</span>
+                </button>
+                <div class="nav-dropdown" id="nav-explorer-dropdown" role="menu">
+                    <a href="explorer.html" class="nav-dropdown-item" role="menuitem">
+                        <span class="nav-dropdown-icon nav-dropdown-icon--eq">⬡</span>
+                        <span class="nav-dropdown-text">
+                            <span class="nav-dropdown-label">Earthquakes</span>
+                            <span class="nav-dropdown-sub">USGS · 30-day rolling</span>
+                        </span>
+                    </a>
+                    <a href="explorer.html?source=fires" class="nav-dropdown-item" role="menuitem">
+                        <span class="nav-dropdown-icon nav-dropdown-icon--fire">▲</span>
+                        <span class="nav-dropdown-text">
+                            <span class="nav-dropdown-label">Fires</span>
+                            <span class="nav-dropdown-sub">NASA FIRMS · 5 satellites</span>
+                        </span>
+                    </a>
+                    <a href="explorer.html?source=gdacs" class="nav-dropdown-item" role="menuitem">
+                        <span class="nav-dropdown-icon nav-dropdown-icon--gdacs">◉</span>
+                        <span class="nav-dropdown-text">
+                            <span class="nav-dropdown-label">GDACS Alerts</span>
+                            <span class="nav-dropdown-sub">Floods · Cyclones · Droughts</span>
+                        </span>
+                    </a>
+                </div>
                 <a href="https://github.com/Vishmayraj/DVS-Asia" target="_blank" class="nav-link">GitHub</a>
+                <button class="nav-theme-btn" id="nav-theme-btn" onclick="toggleTheme()" title="Toggle theme">
+                    <span id="theme-icon">☀</span>
+                </button>
                 <a href="explorer.html" class="nav-cta">
                     Open Map <span class="nav-cta-arrow">→</span>
                 </a>
@@ -53,9 +82,8 @@
                     <span>Live data · Updated every 30 min</span>
                 </div>
                 <h1 class="hero-title">
-                    <span class="hero-title-line">Real-time disaster</span>
-                    <span class="hero-title-line hero-title-line--accent">intelligence</span>
-                    <span class="hero-title-line">for Asia.</span>
+                    <span class="hero-title-line">Asia's disasters,</span>
+                    <span class="hero-title-line hero-title-line--accent">mapped live.</span>
                 </h1>
                 <p class="hero-desc">
                     Fires from space. Earthquakes as they happen. Floods, cyclones,
@@ -74,9 +102,22 @@
                 <div class="hero-sources">
                     <span class="hero-source-label">Pulling from</span>
                     <div class="hero-source-chips">
-                        <span class="source-chip source-chip--usgs">⬡ USGS</span>
-                        <span class="source-chip source-chip--nasa">▲ NASA FIRMS</span>
-                        <span class="source-chip source-chip--gdacs">◉ GDACS</span>
+                        <span class="source-chip source-chip--usgs" id="chip-usgs" tabindex="0">⬡ USGS</span>
+                        <span class="source-chip source-chip--nasa" id="chip-nasa" tabindex="0">▲ NASA FIRMS</span>
+                        <span class="source-chip source-chip--gdacs" id="chip-gdacs" tabindex="0">◉ GDACS</span>
+                    </div>
+                    <!-- Floating UI tooltips -->
+                    <div class="chip-tooltip" id="tooltip-usgs" role="tooltip">
+                        <div class="chip-tooltip-title">USGS Earthquake Hazards</div>
+                        <div class="chip-tooltip-body">Every seismic event in Asia. Updated ~every minute, ingested every 30 min. 30-day rolling window with permanent archive.</div>
+                    </div>
+                    <div class="chip-tooltip" id="tooltip-nasa" role="tooltip">
+                        <div class="chip-tooltip-title">NASA FIRMS</div>
+                        <div class="chip-tooltip-body">5 satellite feeds — GOES, MODIS, NOAA-20, NOAA-21, SNPP. Near-real-time fire detections across Asia. Updated ~every 10 minutes.</div>
+                    </div>
+                    <div class="chip-tooltip" id="tooltip-gdacs" role="tooltip">
+                        <div class="chip-tooltip-title">GDACS / EC JRC</div>
+                        <div class="chip-tooltip-body">Global Disaster Alert and Coordination System. Floods, cyclones, and droughts with pre-fetched polygon geometry. Updated ~every 15 minutes.</div>
                     </div>
                 </div>
             </div>

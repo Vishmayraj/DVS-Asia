@@ -10,8 +10,31 @@
     <link rel="stylesheet" href="css/style.css"/>
     <link rel="stylesheet" href="css/explorer-nav.css"/>
     <script defer src="https://cloud.umami.is/script.js" data-website-id="79757868-4fea-414b-a9b0-f7a9fc9d5c7b"></script>
+    <!-- Restore theme before paint to avoid flash -->
+    <script>
+        (function(){
+            var t = localStorage.getItem('dvs-theme') || 'dark';
+            document.documentElement.setAttribute('data-theme', t);
+        })();
+    </script>
 </head>
 <body>
+
+    <!-- LOADING OVERLAY -->
+    <div class="load-overlay" id="load-overlay" aria-live="polite" aria-label="Loading data">
+        <div class="load-box">
+            <div class="load-spinner">
+                <div class="load-ring load-ring--1"></div>
+                <div class="load-ring load-ring--2"></div>
+                <div class="load-icon">◈</div>
+            </div>
+            <div class="load-source" id="load-source">Loading earthquakes</div>
+            <div class="load-sub" id="load-sub">Fetching from USGS…</div>
+            <div class="load-bar-wrap">
+                <div class="load-bar" id="load-bar"></div>
+            </div>
+        </div>
+    </div>
 
     <!-- SLIM NAV (always visible on explorer, no hide on scroll) -->
     <nav class="exp-nav" id="exp-nav">

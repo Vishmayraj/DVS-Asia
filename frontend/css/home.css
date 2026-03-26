@@ -72,6 +72,7 @@ a:hover { text-decoration: none; }
                 box-shadow 0.3s;
     background: transparent;
     border-bottom: 1px solid transparent;
+    overflow: visible;
 }
 
 /* When scrolled past hero — gains background */
@@ -100,6 +101,7 @@ a:hover { text-decoration: none; }
     display: flex;
     align-items: center;
     justify-content: space-between;
+    overflow: visible;
 }
 
 .nav-logo {
@@ -1031,4 +1033,152 @@ a:hover { text-decoration: none; }
     .cta-block { padding: 48px 24px; }
     .footer-inner { gap: 40px; }
     .footer-links { gap: 32px; }
+}
+
+/* ── NAV THEME BUTTON ────────────────────────────────────── */
+
+.nav-theme-btn {
+    background: var(--bg3);
+    border: 1px solid var(--border-mid);
+    color: var(--text-2);
+    border-radius: var(--radius-sm);
+    width: 32px;
+    height: 32px;
+    cursor: pointer;
+    font-size: 0.88rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: border-color 0.15s, color 0.15s;
+    flex-shrink: 0;
+}
+
+.nav-theme-btn:hover {
+    border-color: var(--teal);
+    color: var(--teal);
+}
+
+/* ── NAV EXPLORER DROPDOWN BUTTON ────────────────────────── */
+
+.nav-link--dropdown {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: var(--font-ui);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.nav-chevron {
+    font-size: 0.65rem;
+    transition: transform 0.2s;
+    display: inline-block;
+}
+
+.nav-link--dropdown[aria-expanded="true"] .nav-chevron {
+    transform: rotate(180deg);
+}
+
+/* ── FLOATING UI: NAV DROPDOWN ───────────────────────────── */
+
+.nav-dropdown {
+    position: fixed;
+    z-index: 2000;
+    min-width: 220px;
+    background: var(--bg2);
+    border: 1px solid var(--border-mid);
+    border-radius: var(--radius-md);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.4), 0 0 0 1px rgba(34,211,184,0.06);
+    padding: 6px;
+    opacity: 0;
+    transform: translateY(4px);   /* ← positive: animates downward into place */
+    pointer-events: none;
+    transition: opacity 0.18s, transform 0.18s;
+}
+
+.nav-dropdown.open {
+    opacity: 1;
+    transform: translateY(0);     /* ← no upward shift */
+    pointer-events: all;
+}
+
+.nav-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+    text-decoration: none;
+    transition: background 0.12s;
+    color: var(--text);
+}
+
+.nav-dropdown-item:hover {
+    background: var(--bg3);
+    text-decoration: none;
+}
+
+.nav-dropdown-icon {
+    font-size: 1rem;
+    width: 24px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.nav-dropdown-icon--eq   { color: var(--teal); }
+.nav-dropdown-icon--fire { color: #fb923c; }
+.nav-dropdown-icon--gdacs{ color: #a78bfa; }
+
+.nav-dropdown-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.nav-dropdown-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.nav-dropdown-sub {
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    color: var(--text-3);
+}
+
+/* ── FLOATING UI: SOURCE CHIP TOOLTIPS ───────────────────── */
+
+.chip-tooltip {
+    position: fixed;   /* Floating UI sets left/top */
+    z-index: 2000;
+    max-width: 240px;
+    background: var(--bg2);
+    border: 1px solid var(--border-mid);
+    border-radius: var(--radius-md);
+    padding: 12px 14px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.45);
+    opacity: 0;
+    transform: translateY(4px);
+    pointer-events: none;
+    transition: opacity 0.18s, transform 0.18s;
+}
+
+.chip-tooltip.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.chip-tooltip-title {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 5px;
+}
+
+.chip-tooltip-body {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    line-height: 1.6;
+    color: var(--text-2);
 }

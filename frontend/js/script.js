@@ -1,14 +1,58 @@
 const API_BASE = "https://dvs-api.onrender.com";
 
+// ── THEME: sync from localStorage (no flash) ──────────────
+
+(function () {
+    const saved = localStorage.getItem('dvs-theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', saved);
+    const icon = document.getElementById('theme-icon');
+    if (icon) icon.textContent = saved === 'dark' ? '☀' : '☾';
+})();
+
+// ── LOADER ────────────────────────────────────────────────
+
+const loaderEl   = document.getElementById('load-overlay');
+const loaderSrc  = document.getElementById('load-source');
+const loaderSub  = document.getElementById('load-sub');
+
+const LOADER_COPY = {
+    earthquakes: {
+        title: 'Loading earthquakes',
+        sub:   'Fetching from USGS…',
+    },
+    fires: {
+        title: 'Loading satellite fires',
+        sub:   'Fetching from NASA FIRMS…',
+    },
+    gdacs: {
+        title: 'Loading disaster alerts',
+        sub:   'Fetching from GDACS…',
+    },
+};
+
+function showLoader(source) {
+    const copy = LOADER_COPY[source] || { title: 'Loading…', sub: '' };
+    if (loaderSrc) loaderSrc.textContent = copy.title;
+    if (loaderSub) loaderSub.textContent = copy.sub;
+    if (loaderEl)  loaderEl.classList.remove('hidden');
+}
+
+function hideLoader() {
+    if (!loaderEl) return;
+    // Small delay so the map has a frame to render before we fade out
+    setTimeout(() => loaderEl.classList.add('hidden'), 300);
+}
+
 // ── MAP INIT ─────────────────────────────────────────────
 
 var map = L.map("map", {
-    minZoom: 3,
-    maxZoom: 32,
+    minZoom: 1,          // no zoom-out restriction
+    maxZoom: 14,
     zoomControl: false,
     worldCopyJump: false,
 }).setView([22, 90], 4);
 
+// Prevent wrapping but allow full zoom-out
 map.setMaxBounds([[-90, -180], [90, 180]]);
 
 var canvasRenderer = L.canvas({ padding: 0.5 });
@@ -23,7 +67,13 @@ var tileLight = L.tileLayer(
     { attribution: '&copy; <a href="https://carto.com/">Carto</a> &copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>' }
 );
 
-tileDark.addTo(map);
+// Apply correct tile for current theme
+const _initTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+if (_initTheme === 'dark') {
+    tileDark.addTo(map);
+} else {
+    tileLight.addTo(map);
+}
 
 // ── LAYERS ───────────────────────────────────────────────
 
@@ -42,7 +92,7 @@ let state = {
     eqData:     [],
     fireData:   [],
     gdacData:   [],
-    theme:      "dark",
+    theme:      _initTheme,
 };
 
 // ── THEME ────────────────────────────────────────────────
@@ -50,7 +100,9 @@ let state = {
 function toggleTheme() {
     state.theme = state.theme === "dark" ? "light" : "dark";
     document.documentElement.setAttribute("data-theme", state.theme);
-    document.getElementById("theme-icon").textContent = state.theme === "dark" ? "☀" : "☾";
+    const icon = document.getElementById("theme-icon");
+    if (icon) icon.textContent = state.theme === "dark" ? "☀" : "☾";
+    localStorage.setItem('dvs-theme', state.theme);
 
     if (state.theme === "dark") {
         map.removeLayer(tileLight);
@@ -108,8 +160,6 @@ function showError(msg) {
 // ── SOURCE SELECTOR ───────────────────────────────────────
 
 function selectSource(src) {
-    if (src === "gdacs" && document.querySelector('[data-source="gdacs"]').classList.contains("source-btn--soon")) return;
-
     state.source = src;
 
     document.querySelectorAll(".source-btn").forEach(btn => {
@@ -159,6 +209,7 @@ function setSatFilter(s) {
 // ── EARTHQUAKES ───────────────────────────────────────────
 
 async function loadEarthquakes() {
+    showLoader('earthquakes');
     try {
         const res = await fetch(`${API_BASE}/earthquakes`);
         if (!res.ok) throw new Error(`Server returned ${res.status}`);
@@ -167,6 +218,8 @@ async function loadEarthquakes() {
         renderEarthquakes();
     } catch (err) {
         showError(`Earthquakes: ${err.message}`);
+    } finally {
+        hideLoader();
     }
 }
 
@@ -253,7 +306,6 @@ function confidenceDisplay(confidence) {
     if (confidence != null && !isNaN(Number(confidence))) {
         return `${Number(confidence)}%`;
     }
-
     const c = (confidence || "").toLowerCase();
     if (c === "high" || c === "h")    return "High";
     if (c === "nominal" || c === "n") return "Nominal";
@@ -267,6 +319,7 @@ function formatAcqTime(t) {
 }
 
 async function loadFires(source = "goes") {
+    showLoader('fires');
     try {
         const res = await fetch(`${API_BASE}/firms_fires?source=${source}`);
         if (!res.ok) throw new Error(`Server returned ${res.status}`);
@@ -275,6 +328,8 @@ async function loadFires(source = "goes") {
         renderFires();
     } catch (err) {
         showError(`Fires: ${err.message}`);
+    } finally {
+        hideLoader();
     }
 }
 
@@ -361,6 +416,7 @@ const GDACS_LABELS = {
 };
 
 async function loadGDACS() {
+    showLoader('gdacs');
     try {
         const res = await fetch(`${API_BASE}/gdacs`);
         if (!res.ok) throw new Error(`Server returned ${res.status}`);
@@ -369,6 +425,8 @@ async function loadGDACS() {
         renderGDACS();
     } catch (err) {
         showError(`GDACS: ${err.message}`);
+    } finally {
+        hideLoader();
     }
 }
 
@@ -441,6 +499,14 @@ function renderGDACS() {
     setStats(state.gdacData.length, visible);
 }
 
-// ── INITIAL LOAD ──────────────────────────────────────────
+// ── INITIAL LOAD — respect ?source= URL param ─────────────
 
-loadEarthquakes();
+(function () {
+    const params = new URLSearchParams(window.location.search);
+    const src    = params.get('source');
+    if (src && ['earthquakes', 'fires', 'gdacs'].includes(src)) {
+        selectSource(src);
+    } else {
+        loadEarthquakes();
+    }
+})();

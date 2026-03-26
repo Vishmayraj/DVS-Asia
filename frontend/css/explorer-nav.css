@@ -99,3 +99,114 @@
 @media (max-width: 768px) {
     .exp-nav-text { display: none; }
 }
+
+/* ── LOADING OVERLAY ─────────────────────────────────────── */
+
+.load-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg, #0e0f11);
+    transition: opacity 0.5s ease, visibility 0.5s ease;
+}
+
+.load-overlay.hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+.load-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    text-align: center;
+}
+
+/* Spinning rings */
+.load-spinner {
+    position: relative;
+    width: 72px;
+    height: 72px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 4px;
+}
+
+.load-ring {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 2px solid transparent;
+}
+
+.load-ring--1 {
+    border-top-color: #22d3b8;
+    animation: spin 1.1s linear infinite;
+}
+
+.load-ring--2 {
+    inset: 8px;
+    border-top-color: rgba(34,211,184,0.35);
+    animation: spin 1.6s linear infinite reverse;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.load-icon {
+    color: #22d3b8;
+    font-size: 1.3rem;
+    animation: load-icon-pulse 2s ease-in-out infinite;
+}
+
+@keyframes load-icon-pulse {
+    0%, 100% { opacity: 0.5; transform: scale(0.95); }
+    50%       { opacity: 1;   transform: scale(1.05); }
+}
+
+.load-source {
+    font-family: 'Syne', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text, #e8eaed);
+    letter-spacing: -0.01em;
+}
+
+.load-sub {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--text-3, #555b66);
+    letter-spacing: 0.04em;
+    min-height: 1.2em;
+    transition: opacity 0.3s;
+}
+
+/* Indeterminate progress bar */
+.load-bar-wrap {
+    width: 200px;
+    height: 2px;
+    background: var(--border, rgba(255,255,255,0.08));
+    border-radius: 2px;
+    overflow: hidden;
+    margin-top: 4px;
+}
+
+.load-bar {
+    height: 100%;
+    width: 40%;
+    background: linear-gradient(90deg, transparent, #22d3b8, transparent);
+    border-radius: 2px;
+    animation: load-sweep 1.6s ease-in-out infinite;
+}
+
+@keyframes load-sweep {
+    0%   { transform: translateX(-120%); }
+    100% { transform: translateX(350%); }
+}
