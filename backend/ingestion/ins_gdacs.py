@@ -8,6 +8,9 @@ import sys
 from dotenv import load_dotenv
 import time
 from pathlib import Path
+from shapely.geometry import shape, mapping
+from shapely.ops import unary_union
+
 
 WAIT_TIME = 30
 RUN_ONCE = "--once" in sys.argv
@@ -17,12 +20,62 @@ SKIP_TYPES = {"EQ", "WF"}
 env_path = Path(__file__).resolve().parent.parent.parent / ".env"
 load_dotenv(env_path)
 
+SIMPLIFY_TOLERANCE = 0.01   # ~1 km; raise to 0.05 for even smaller payloads
+COORD_PRECISION    = 4      # decimal places kept per coordinate
+
+
+def round_coords(geom_dict):
+    """Recursively round all coordinate values in a GeoJSON geometry dict."""
+    def _round(obj):
+        if isinstance(obj, list):
+            return [_round(i) for i in obj]
+        if isinstance(obj, float):
+            return round(obj, COORD_PRECISION)
+        return obj
+    result = dict(geom_dict)
+    result["coordinates"] = _round(result.get("coordinates", []))
+    return result
+
+
+def simplify_geometry(geom_data):
+    """
+    Accept a raw GDACS FeatureCollection, simplify all polygon/line geometries,
+    and return a single GeoJSON geometry dict (or None on failure).
+    """
+    if not geom_data or geom_data.get("type") != "FeatureCollection":
+        return geom_data
+
+    shapes = []
+    for feature in geom_data.get("features", []):
+        geom = feature.get("geometry")
+        if not geom:
+            continue
+        try:
+            shapes.append(shape(geom))
+        except Exception:
+            continue
+
+    if not shapes:
+        return None
+
+    try:
+        merged    = unary_union(shapes)
+        simplified = merged.simplify(SIMPLIFY_TOLERANCE, preserve_topology=True)
+        result    = round_coords(mapping(simplified))
+        return result
+    except Exception as e:
+        print(f"  simplify failed, storing raw geometry: {e}")
+        # fall back to the raw first geometry so we don't lose the event
+        raw = geom_data["features"][0].get("geometry")
+        return round_coords(raw) if raw else None
+
 
 def fetch_geometry(geom_url):
     try:
         res = requests.get(geom_url, timeout=15)
         res.raise_for_status()
-        return res.json()
+        raw = res.json()
+        return simplify_geometry(raw)   # <-- simplify before returning
     except Exception as e:
         print(f"  geometry fetch failed for {geom_url}: {e}")
         return None
