@@ -3,194 +3,376 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>DisasterViz Asia</title>
+    <title>DisasterViz Asia — Real-time disaster visualization</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link rel="stylesheet" href="css/style.css"/>
+    <link rel="stylesheet" href="css/home.css"/>
     <script defer src="https://cloud.umami.is/script.js" data-website-id="79757868-4fea-414b-a9b0-f7a9fc9d5c7b"></script>
 </head>
 <body>
 
-    <div class="app-shell">
-
-        <!-- MAP -->
-        <div class="map-wrap">
-            <div id="map"></div>
-            <div id="map-error"></div>
-
-            <div class="map-wordmark">
-                <span class="wordmark-icon">◈</span>
-                <span class="wordmark-text">DisasterViz</span>
+    <!-- NAV -->
+    <nav class="nav" id="nav">
+        <div class="nav-inner">
+            <a href="index.html" class="nav-logo">
+                <span class="nav-logo-icon">◈</span>
+                <span class="nav-logo-text">DisasterViz</span>
+            </a>
+            <div class="nav-links">
+                <a href="index.html" class="nav-link nav-link--active">Home</a>
+                <a href="explorer.html" class="nav-link">Explorer</a>
+                <a href="https://github.com/Vishmayraj/DVS-Asia" target="_blank" class="nav-link">GitHub</a>
+                <a href="explorer.html" class="nav-cta">
+                    Open Map <span class="nav-cta-arrow">→</span>
+                </a>
             </div>
+            <button class="nav-hamburger" id="nav-hamburger" onclick="toggleMobileMenu()" aria-label="Toggle menu">
+                <span></span><span></span><span></span>
+            </button>
+        </div>
+        <div class="nav-mobile" id="nav-mobile">
+            <a href="index.html" class="nav-mobile-link nav-mobile-link--active">Home</a>
+            <a href="explorer.html" class="nav-mobile-link">Explorer</a>
+            <a href="https://github.com/Vishmayraj/DVS-Asia" target="_blank" class="nav-mobile-link">GitHub</a>
+            <a href="explorer.html" class="nav-mobile-cta">Open Map →</a>
+        </div>
+    </nav>
 
-            <!-- mobile only: bottom sheet handle -->
-            <div class="sheet-handle" id="sheet-handle" onclick="toggleSheet()">
-                <div class="sheet-pip"></div>
-                <span class="sheet-label" id="sheet-label">Show panel</span>
+    <main>
+
+        <!-- HERO -->
+        <section class="hero">
+            <div class="hero-bg">
+                <div class="hero-grid"></div>
+                <div class="hero-glow hero-glow--1"></div>
+                <div class="hero-glow hero-glow--2"></div>
+            </div>
+            <div class="hero-content">
+                <div class="hero-eyebrow">
+                    <span class="hero-eyebrow-dot"></span>
+                    <span>Live data · Updated every 30 min</span>
+                </div>
+                <h1 class="hero-title">
+                    <span class="hero-title-line">Real-time disaster</span>
+                    <span class="hero-title-line hero-title-line--accent">intelligence</span>
+                    <span class="hero-title-line">for Asia.</span>
+                </h1>
+                <p class="hero-desc">
+                    Fires from space. Earthquakes as they happen. Floods, cyclones,
+                    droughts unified in one live map. All three data streams, deduplicated,
+                    and rendered in real time.
+                </p>
+                <div class="hero-actions">
+                    <a href="explorer.html" class="btn-primary">
+                        <span>Launch Explorer</span>
+                        <span class="btn-arrow">→</span>
+                    </a>
+                    <a href="https://github.com/Vishmayraj/DVS-Asia" target="_blank" class="btn-secondary">
+                        View source
+                    </a>
+                </div>
+                <div class="hero-sources">
+                    <span class="hero-source-label">Pulling from</span>
+                    <div class="hero-source-chips">
+                        <span class="source-chip source-chip--usgs">⬡ USGS</span>
+                        <span class="source-chip source-chip--nasa">▲ NASA FIRMS</span>
+                        <span class="source-chip source-chip--gdacs">◉ GDACS</span>
+                    </div>
+                </div>
+            </div>
+            <div class="hero-visual">
+                <div class="hero-map-preview">
+                    <div class="map-preview-frame">
+                        <div class="map-preview-inner">
+                            <!-- Decorative map dots -->
+                            <div class="map-dot map-dot--eq" style="top:38%;left:62%;width:10px;height:10px;background:#f87171;animation-delay:0s"></div>
+                            <div class="map-dot map-dot--eq" style="top:55%;left:72%;width:7px;height:7px;background:#fb923c;animation-delay:0.4s"></div>
+                            <div class="map-dot map-dot--eq" style="top:44%;left:80%;width:14px;height:14px;background:#ff1a1a;animation-delay:0.8s"></div>
+                            <div class="map-dot map-dot--eq" style="top:30%;left:55%;width:6px;height:6px;background:#facc15;animation-delay:1.1s"></div>
+                            <div class="map-dot map-dot--fire" style="top:60%;left:45%;width:8px;height:8px;background:#ef4444;animation-delay:0.2s"></div>
+                            <div class="map-dot map-dot--fire" style="top:65%;left:50%;width:6px;height:6px;background:#fb923c;animation-delay:0.6s"></div>
+                            <div class="map-dot map-dot--fire" style="top:58%;left:58%;width:5px;height:5px;background:#fde68a;animation-delay:1.0s"></div>
+                            <div class="map-dot map-dot--flood" style="top:25%;left:40%;width:40px;height:28px;background:rgba(96,165,250,0.3);border:1px solid rgba(96,165,250,0.6);border-radius:4px;animation-delay:0.3s"></div>
+                            <div class="map-dot map-dot--flood" style="top:70%;left:30%;width:30px;height:20px;background:rgba(167,139,250,0.3);border:1px solid rgba(167,139,250,0.6);border-radius:4px;animation-delay:0.9s"></div>
+                            <div class="map-preview-label">Asia · Live view</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="hero-scroll-hint">
+                <span>Scroll to learn more</span>
+                <div class="scroll-arrow">↓</div>
+            </div>
+        </section>
+
+        <!-- STATS BAR -->
+        <section class="stats-bar">
+            <div class="stats-bar-inner">
+                <div class="stat-item">
+                    <div class="stat-num">3</div>
+                    <div class="stat-desc">Live data sources</div>
+                </div>
+                <div class="stat-divider"></div>
+                <div class="stat-item">
+                    <div class="stat-num">30m</div>
+                    <div class="stat-desc">Refresh cadence</div>
+                </div>
+                <div class="stat-divider"></div>
+                <div class="stat-item">
+                    <div class="stat-num">5</div>
+                    <div class="stat-desc">Satellite feeds</div>
+                </div>
+                <div class="stat-divider"></div>
+                <div class="stat-item">
+                    <div class="stat-num">30d</div>
+                    <div class="stat-desc">Rolling seismic window</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- HOW IT WORKS -->
+        <section class="section" id="how">
+            <div class="section-inner">
+                <div class="section-header">
+                    <span class="section-tag">Architecture</span>
+                    <h2 class="section-title">Three pipelines.<br>One live map.</h2>
+                    <p class="section-sub">
+                        Each data source is ingested independently, stored in PostgreSQL, and served through a FastAPI layer. The browser never hits the source APIs directly.
+                    </p>
+                </div>
+
+                <div class="pipeline-grid">
+                    <div class="pipeline-card pipeline-card--eq">
+                        <div class="pipeline-icon">⬡</div>
+                        <div class="pipeline-source">USGS FDSNWS</div>
+                        <h3 class="pipeline-name">Earthquakes</h3>
+                        <p class="pipeline-desc">
+                            Every seismic event in Asia, updated every 30 minutes. Magnitude encoded in size and color. 30-day rolling live table plus a permanent archive. USGS revisions are caught and applied only when magnitude, location, or type actually changed.
+                        </p>
+                        <div class="pipeline-tags">
+                            <span class="ptag">M4+ · M5+ · M6+ · M7+</span>
+                            <span class="ptag">Depth · Tsunami flag</span>
+                            <span class="ptag">30-day rolling</span>
+                        </div>
+                    </div>
+
+                    <div class="pipeline-card pipeline-card--fire">
+                        <div class="pipeline-icon">▲</div>
+                        <div class="pipeline-source">NASA FIRMS</div>
+                        <h3 class="pipeline-name">Satellite Fires</h3>
+                        <p class="pipeline-desc">
+                            Five independent satellite feeds — GOES, MODIS, NOAA-20, NOAA-21, and SNPP. Each stored in its own table. Hash-checked every cycle: no unnecessary writes if data hasn't changed. Canvas renderer handles 10k+ fire shapes without DOM slowdown.
+                        </p>
+                        <div class="pipeline-tags">
+                            <span class="ptag">5 satellite feeds</span>
+                            <span class="ptag">FRP · Confidence</span>
+                            <span class="ptag">Day / Night</span>
+                        </div>
+                    </div>
+
+                    <div class="pipeline-card pipeline-card--gdacs">
+                        <div class="pipeline-icon">◉</div>
+                        <div class="pipeline-source">GDACS / EC JRC</div>
+                        <h3 class="pipeline-name">Global Alerts</h3>
+                        <p class="pipeline-desc">
+                            Floods, cyclones, and droughts from the EU's Global Disaster Alert system. Polygon geometry is pre-fetched during ingestion and stored as JSONB — the browser gets clean GeoJSON directly from the backend, no GDACS API calls on load.
+                        </p>
+                        <div class="pipeline-tags">
+                            <span class="ptag">Flood · Cyclone · Drought</span>
+                            <span class="ptag">Pre-fetched polygons</span>
+                            <span class="ptag">Alert severity</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- FEATURE HIGHLIGHT -->
+        <section class="section section--alt">
+            <div class="section-inner">
+                <div class="feature-split">
+                    <div class="feature-text">
+                        <span class="section-tag">Design decisions</span>
+                        <h2 class="section-title">Built for clarity,<br>not complexity.</h2>
+                        <div class="feature-list">
+                            <div class="feature-item">
+                                <div class="feature-item-icon">◈</div>
+                                <div>
+                                    <div class="feature-item-title">No frameworks, no build step</div>
+                                    <div class="feature-item-desc">Pure HTML, CSS, and Vanilla JS. Leaflet 1.9.4 for the map. Ships and loads fast.</div>
+                                </div>
+                            </div>
+                            <div class="feature-item">
+                                <div class="feature-item-icon">◈</div>
+                                <div>
+                                    <div class="feature-item-title">Dark + light themes</div>
+                                    <div class="feature-item-desc">Theme toggle swaps both the UI and the Leaflet tile layer between Carto Dark and Carto Light.</div>
+                                </div>
+                            </div>
+                            <div class="feature-item">
+                                <div class="feature-item-icon">◈</div>
+                                <div>
+                                    <div class="feature-item-title">Mobile-first bottom sheet</div>
+                                    <div class="feature-item-desc">On mobile, the sidebar becomes a slide-up bottom sheet. The map stays full screen underneath.</div>
+                                </div>
+                            </div>
+                            <div class="feature-item">
+                                <div class="feature-item-icon">◈</div>
+                                <div>
+                                    <div class="feature-item-title">Deduplication by design</div>
+                                    <div class="feature-item-desc">Each data source lives in its own table. GDACS earthquakes and wildfires are filtered out to avoid overlap with USGS and FIRMS.</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="feature-diagram">
+                        <div class="arch-diagram">
+                            <div class="arch-row arch-row--sources">
+                                <div class="arch-box arch-box--usgs">NASA FIRMS</div>
+                                <div class="arch-box arch-box--usgs">USGS</div>
+                                <div class="arch-box arch-box--usgs">GDACS</div>
+                            </div>
+                            <div class="arch-arrow-row">
+                                <div class="arch-arrow"></div>
+                            </div>
+                            <div class="arch-row">
+                                <div class="arch-box arch-box--actions">GitHub Actions<br><span class="arch-sub">cron · 30 min</span></div>
+                            </div>
+                            <div class="arch-arrow-row">
+                                <div class="arch-arrow"></div>
+                            </div>
+                            <div class="arch-row">
+                                <div class="arch-box arch-box--db">PostgreSQL<br><span class="arch-sub">Supabase</span></div>
+                            </div>
+                            <div class="arch-arrow-row">
+                                <div class="arch-arrow"></div>
+                            </div>
+                            <div class="arch-row">
+                                <div class="arch-box arch-box--api">FastAPI<br><span class="arch-sub">Render</span></div>
+                            </div>
+                            <div class="arch-arrow-row">
+                                <div class="arch-arrow"></div>
+                            </div>
+                            <div class="arch-row">
+                                <div class="arch-box arch-box--frontend">Leaflet Map<br><span class="arch-sub">Static frontend</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ROADMAP -->
+        <section class="section">
+            <div class="section-inner">
+                <div class="section-header">
+                    <span class="section-tag">Roadmap</span>
+                    <h2 class="section-title">What's next.</h2>
+                </div>
+                <div class="roadmap-grid">
+                    <div class="roadmap-item">
+                        <div class="roadmap-status roadmap-status--planned"></div>
+                        <div class="roadmap-text">
+                            <div class="roadmap-title">Global coverage</div>
+                            <div class="roadmap-desc">Expand bounding boxes beyond Asia to worldwide disaster tracking.</div>
+                        </div>
+                    </div>
+                    <div class="roadmap-item">
+                        <div class="roadmap-status roadmap-status--planned"></div>
+                        <div class="roadmap-text">
+                            <div class="roadmap-title">Volcano pipeline</div>
+                            <div class="roadmap-desc">USGS Volcano Hazards or Smithsonian GVP as a fourth data source.</div>
+                        </div>
+                    </div>
+                    <div class="roadmap-item">
+                        <div class="roadmap-status roadmap-status--planned"></div>
+                        <div class="roadmap-text">
+                            <div class="roadmap-title">Historical analytics</div>
+                            <div class="roadmap-desc">Query the earthquake archive table and visualize event frequency over time.</div>
+                        </div>
+                    </div>
+                    <div class="roadmap-item">
+                        <div class="roadmap-status roadmap-status--planned"></div>
+                        <div class="roadmap-text">
+                            <div class="roadmap-title">GDACS alert severity overlay</div>
+                            <div class="roadmap-desc">Encode green/orange/red alert levels in GDACS marker color.</div>
+                        </div>
+                    </div>
+                    <div class="roadmap-item">
+                        <div class="roadmap-status roadmap-status--planned"></div>
+                        <div class="roadmap-text">
+                            <div class="roadmap-title">API pagination</div>
+                            <div class="roadmap-desc">Cursor-based pagination for large earthquake archive responses.</div>
+                        </div>
+                    </div>
+                    <div class="roadmap-item">
+                        <div class="roadmap-status roadmap-status--planned"></div>
+                        <div class="roadmap-text">
+                            <div class="roadmap-title">Data export</div>
+                            <div class="roadmap-desc">Re-add GDACS raw JSON dump for offline analysis and research.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA -->
+        <section class="section section--cta">
+            <div class="section-inner">
+                <div class="cta-block">
+                    <div class="cta-glow"></div>
+                    <div class="cta-content">
+                        <h2 class="cta-title">See it live.</h2>
+                        <p class="cta-desc">Open the explorer to browse real-time fires, earthquakes, and disaster alerts across Asia.</p>
+                        <a href="explorer.html" class="btn-primary btn-primary--large">
+                            <span>Launch Explorer</span>
+                            <span class="btn-arrow">→</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+        <div class="footer-inner">
+            <div class="footer-left">
+                <div class="footer-logo">
+                    <span class="nav-logo-icon">◈</span>
+                    <span class="nav-logo-text">DisasterViz</span>
+                </div>
+                <div class="footer-tagline">Real-time disaster visualization for Asia.</div>
+            </div>
+            <div class="footer-links">
+                <div class="footer-col">
+                    <div class="footer-col-label">Pages</div>
+                    <a href="index.html" class="footer-link">Home</a>
+                    <a href="explorer.html" class="footer-link">Explorer</a>
+                </div>
+                <div class="footer-col">
+                    <div class="footer-col-label">Sources</div>
+                    <a href="https://earthquake.usgs.gov/" target="_blank" class="footer-link">USGS</a>
+                    <a href="https://firms.modaps.eosdis.nasa.gov/" target="_blank" class="footer-link">NASA FIRMS</a>
+                    <a href="https://gdacs.org/" target="_blank" class="footer-link">GDACS</a>
+                </div>
+                <div class="footer-col">
+                    <div class="footer-col-label">Built by</div>
+                    <a href="https://github.com/Vishmayraj" target="_blank" class="footer-link">GitHub</a>
+                    <a href="https://www.instagram.com/notsoteekhipanipuri/" target="_blank" class="footer-link">Instagram</a>
+                    <a href="https://www.linkedin.com/in/vishmayraj-zala-121018336/" target="_blank" class="footer-link">LinkedIn</a>
+                </div>
             </div>
         </div>
+        <div class="footer-bottom">
+            <span>Built by Zala Vishmayraj</span>
+            <span class="footer-dot">·</span>
+            <a href="https://github.com/Vishmayraj/DVS-Asia" target="_blank" class="footer-gh">View on GitHub</a>
+        </div>
+    </footer>
 
-        <!-- SIDEBAR -->
-        <aside class="sidebar" id="sidebar">
-            <div class="sidebar-inner">
+    <script src="js/home.js"></script>
 
-                <div class="sidebar-head">
-                    <div>
-                        <div class="sidebar-title">Control Panel</div>
-                        <div class="sidebar-sub" id="last-updated">No data loaded</div>
-                    </div>
-                    <div style="display:flex;gap:8px;align-items:center;">
-                        <button class="theme-btn close-btn" onclick="toggleSheet()" title="Close panel">✕</button>
-                        <button class="theme-btn" onclick="toggleTheme()" title="Toggle theme">
-                            <span id="theme-icon">☀</span>
-                        </button>
-                    </div>
-                </div>
-
-                <div class="divider"></div>
-
-                <div class="section-label">Data source</div>
-                <div class="source-grid">
-                    <button class="source-btn active" data-source="earthquakes" onclick="selectSource('earthquakes')">
-                        <span class="source-icon">⬡</span>
-                        <span>Earthquakes</span>
-                    </button>
-                    <button class="source-btn" data-source="fires" onclick="selectSource('fires')">
-                        <span class="source-icon">▲</span>
-                        <span>Fires</span>
-                    </button>
-                    <button class="source-btn" data-source="gdacs" onclick="selectSource('gdacs')">
-                        <span class="source-icon">◉</span>
-                        <span>GDACS</span>
-                    </button>
-                </div>
-
-                <div class="sub-filter" id="filter-earthquakes">
-                    <div class="section-label">Magnitude filter</div>
-                    <div class="filter-pills">
-                        <button class="pill active" data-mag="all"   onclick="setMagFilter('all')">All</button>
-                        <button class="pill" data-mag="mag5" onclick="setMagFilter('mag5')">M5+</button>
-                        <button class="pill" data-mag="mag6" onclick="setMagFilter('mag6')">M6+</button>
-                        <button class="pill" data-mag="mag7" onclick="setMagFilter('mag7')">M7+</button>
-                    </div>
-                </div>
-
-                <div class="sub-filter hidden" id="filter-fires">
-                    <div class="section-label">Satellite source</div>
-                    <div class="filter-pills">
-                        <button class="pill active" data-sat="goes"   onclick="setSatFilter('goes')">GOES</button>
-                        <button class="pill" data-sat="modis"  onclick="setSatFilter('modis')">MODIS</button>
-                        <button class="pill" data-sat="noaa20" onclick="setSatFilter('noaa20')">NOAA-20</button>
-                        <button class="pill" data-sat="noaa21" onclick="setSatFilter('noaa21')">NOAA-21</button>
-                        <button class="pill" data-sat="snpp"   onclick="setSatFilter('snpp')">SNPP</button>
-                    </div>
-                </div>
-
-                <div class="divider"></div>
-
-                <div class="section-label">Live stats</div>
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-num" id="stat-count">—</div>
-                        <div class="stat-lbl">Events loaded</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-num" id="stat-visible">—</div>
-                        <div class="stat-lbl">Visible on map</div>
-                    </div>
-                </div>
-
-                <div class="divider"></div>
-
-                <div class="section-label">Legend</div>
-                <div class="legend" id="legend-earthquakes">
-                    <div class="legend-row">
-                        <span class="leg-dot" style="background:#22d3b8;width:6px;height:6px;"></span>
-                        <span>M &lt; 4</span>
-                    </div>
-                    <div class="legend-row">
-                        <span class="leg-dot" style="background:#facc15;width:8px;height:8px;"></span>
-                        <span>M 4 – 5</span>
-                    </div>
-                    <div class="legend-row">
-                        <span class="leg-dot" style="background:#fb923c;width:10px;height:10px;"></span>
-                        <span>M 5 – 6</span>
-                    </div>
-                    <div class="legend-row">
-                        <span class="leg-dot" style="background:#f87171;width:12px;height:12px;"></span>
-                        <span>M 6 – 7</span>
-                    </div>
-                    <div class="legend-row">
-                        <span class="leg-dot" style="background:#ff1a1a;width:14px;height:14px;"></span>
-                        <span>M 7+</span>
-                    </div>
-                </div>
-                <div class="legend hidden" id="legend-fires">
-                    <div class="legend-row">
-                        <span class="leg-square" style="background:#fde68a;"></span>
-                        <span>Low confidence</span>
-                    </div>
-                    <div class="legend-row">
-                        <span class="leg-square" style="background:#fb923c;"></span>
-                        <span>Nominal / medium</span>
-                    </div>
-                    <div class="legend-row">
-                        <span class="leg-square" style="background:#ef4444;"></span>
-                        <span>High confidence</span>
-                    </div>
-                </div>
-
-                <div class="legend hidden" id="legend-gdacs">
-                    <div class="legend-row">
-                        <span class="leg-square" style="background:#60a5fa;"></span>
-                        <span>Flood</span>
-                    </div>
-                    <div class="legend-row">
-                        <span class="leg-square" style="background:#a78bfa;"></span>
-                        <span>Cyclone</span>
-                    </div>
-                    <div class="legend-row">
-                        <span class="leg-square" style="background:#fde68a;"></span>
-                        <span>Drought</span>
-                    </div>
-                </div>
-
-                <div class="divider"></div>
-
-                <div class="section-label">Data sources</div>
-                <div class="credits">
-                    <a href="https://earthquake.usgs.gov/" target="_blank" class="credit-row">
-                        <span class="credit-dot usgs"></span>
-                        <span>USGS Earthquake Hazards</span>
-                    </a>
-                    <a href="https://firms.modaps.eosdis.nasa.gov/" target="_blank" class="credit-row">
-                        <span class="credit-dot nasa"></span>
-                        <span>NASA FIRMS</span>
-                    </a>
-                    <a href="https://gdacs.org/" target="_blank" class="credit-row">
-                        <span class="credit-dot gdacs"></span>
-                        <span>GDACS Global Alerts</span>
-                    </a>
-                </div>
-
-                <div class="sidebar-footer">
-                    <span>Built by Zala Vishmayraj</span>
-                    <div class="footer-socials">
-                        <a href="https://github.com/Vishmayraj/DVS-Asia" target="_blank">GitHub</a>
-                        <span class="footer-dot">·</span>
-                        <a href="https://www.instagram.com/notsoteekhipanipuri/" target="_blank">Instagram</a>
-                        <span class="footer-dot">·</span>
-                        <a href="https://www.linkedin.com/in/vishmayraj-zala-121018336/" target="_blank">LinkedIn</a>
-                    </div>
-                </div>
-
-            </div>
-        </aside>
-
-    </div>
-
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="js/script.js"></script>
 </body>
 </html>

@@ -4,7 +4,7 @@ const API_BASE = "https://dvs-api.onrender.com";
 
 var map = L.map("map", {
     minZoom: 3,
-    maxZoom: 14,
+    maxZoom: 32,
     zoomControl: false,
     worldCopyJump: false,
 }).setView([22, 90], 4);

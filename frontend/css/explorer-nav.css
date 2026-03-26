@@ -1,0 +1,101 @@
+/* ── EXPLORER NAV ────────────────────────────────────────── */
+/* Slim fixed bar that sits above the map on explorer.html    */
+
+.exp-nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 48px;
+    z-index: 1100;
+    background: rgba(14, 15, 17, 0.88);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+}
+
+[data-theme="light"] .exp-nav {
+    background: rgba(240, 242, 245, 0.88);
+    border-bottom-color: rgba(0,0,0,0.08);
+}
+
+.exp-nav-inner {
+    height: 100%;
+    padding: 0 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.exp-nav-logo {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    text-decoration: none;
+}
+
+.exp-nav-icon {
+    color: #22d3b8;
+    font-size: 1rem;
+}
+
+.exp-nav-text {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 0.9rem;
+    letter-spacing: -0.01em;
+    color: var(--text);
+}
+
+.exp-nav-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.exp-nav-link {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-2);
+    padding: 4px 10px;
+    border-radius: 6px;
+    text-decoration: none;
+    transition: color 0.15s, background 0.15s;
+}
+
+.exp-nav-link:hover {
+    color: var(--text);
+    background: var(--bg3);
+}
+
+.exp-theme-btn {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--text-2);
+    border-radius: 6px;
+    width: 30px;
+    height: 30px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: border-color 0.15s, color 0.15s;
+}
+
+.exp-theme-btn:hover {
+    border-color: #22d3b8;
+    color: #22d3b8;
+}
+
+/* Push the app-shell down so the nav doesn't overlap the map */
+.app-shell {
+    padding-top: 48px;
+    height: 100vh;
+}
+
+/* On mobile, the wordmark overlaps nav — hide it on explorer */
+@media (max-width: 768px) {
+    .exp-nav-text { display: none; }
+}
