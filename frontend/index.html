@@ -116,7 +116,7 @@
                         <div class="chip-tooltip-body">5 satellite feeds — GOES, MODIS, NOAA-20, NOAA-21, SNPP. Near-real-time fire detections across Asia. Updated ~every 10 minutes.</div>
                     </div>
                     <div class="chip-tooltip" id="tooltip-gdacs" role="tooltip">
-                        <div class="chip-tooltip-title">GDACS / EC JRC</div>
+                        <div class="chip-tooltip-title">GDACS</div>
                         <div class="chip-tooltip-body">Global Disaster Alert and Coordination System. Floods, cyclones, and droughts with pre-fetched polygon geometry. Updated ~every 15 minutes.</div>
                     </div>
                 </div>
@@ -203,7 +203,7 @@
                 <div class="pipeline-grid">
                     <div class="pipeline-card pipeline-card--eq">
                         <div class="pipeline-icon">⬡</div>
-                        <div class="pipeline-source">USGS FDSNWS</div>
+                        <div class="pipeline-source">USGS</div>
                         <h3 class="pipeline-name">Earthquakes</h3>
                         <p class="pipeline-desc">
                             Every seismic event in Asia, updated every 30 minutes. Magnitude encoded in size and color. 30-day rolling live table plus a permanent archive. USGS revisions are caught and applied only when magnitude, location, or type actually changed.
@@ -231,7 +231,7 @@
 
                     <div class="pipeline-card pipeline-card--gdacs">
                         <div class="pipeline-icon">◉</div>
-                        <div class="pipeline-source">GDACS / EC JRC</div>
+                        <div class="pipeline-source">GDACS</div>
                         <h3 class="pipeline-name">Global Alerts</h3>
                         <p class="pipeline-desc">
                             Floods, cyclones, and droughts from the EU's Global Disaster Alert system. Polygon geometry is pre-fetched during ingestion and stored as JSONB — the browser gets clean GeoJSON directly from the backend, no GDACS API calls on load.

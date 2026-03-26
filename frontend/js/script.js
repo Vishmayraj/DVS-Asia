@@ -9,6 +9,14 @@ const API_BASE = "https://dvs-api.onrender.com";
     if (icon) icon.textContent = saved === 'dark' ? '☀' : '☾';
 })();
 
+// ── POPUP_OPTS ────────────────────────────────────────────────
+const POPUP_OPTS = {
+    maxWidth: Math.min(280, window.innerWidth - 32),
+    autoPan: true,
+    autoPanPaddingTopLeft:     L.point(8, 60),  // 60 accounts for the top nav
+    autoPanPaddingBottomRight: L.point(8, 8),
+};
+
 // ── LOADER ────────────────────────────────────────────────
 
 const loaderEl   = document.getElementById('load-overlay');
@@ -279,7 +287,7 @@ function renderEarthquakes() {
                     </tr>
                 </table>
             </div>
-        `);
+        `, POPUP_OPTS);
 
         marker.addTo(layers.earthquakes);
     });
@@ -392,7 +400,7 @@ function renderFires() {
                     </tr>
                 </table>
             </div>
-        `);
+        `, POPUP_OPTS);
 
         rect.addTo(layers.fires);
     });
@@ -486,7 +494,7 @@ function renderGDACS() {
                         </tr>
                     </table>
                 </div>
-            `);
+            `, POPUP_OPTS);
 
             layer.addTo(layers.gdacs);
             visible++;

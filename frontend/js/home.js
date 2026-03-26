@@ -126,8 +126,17 @@ chipPairs.forEach(({ chip: chipId, tooltip: tooltipId }) => {
 
     function showTooltip() {
         const rect = chip.getBoundingClientRect();
-        tooltip.style.left = rect.left + (rect.width / 2) + 'px';
-        tooltip.style.top  = (rect.top - 8) + 'px';
+        const ttW  = 240; // matches max-width in CSS
+
+        let left = rect.left + rect.width / 2;
+
+        // clamp so tooltip never overflows left or right
+        const minLeft = ttW / 2 + 8;
+        const maxLeft = window.innerWidth - ttW / 2 - 8;
+        left = Math.max(minLeft, Math.min(maxLeft, left));
+
+        tooltip.style.left      = left + 'px';
+        tooltip.style.top       = (rect.top - 8) + 'px';
         tooltip.style.transform = 'translateX(-50%) translateY(-100%)';
         tooltip.classList.add('visible');
     }
