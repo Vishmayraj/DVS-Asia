@@ -10,12 +10,33 @@ const API_BASE = "https://dvs-api.onrender.com";
 })();
 
 // ── POPUP_OPTS ────────────────────────────────────────────────
+
 const POPUP_OPTS = {
     maxWidth: Math.min(280, window.innerWidth - 32),
     autoPan: true,
     autoPanPaddingTopLeft:     L.point(8, 60),  // 60 accounts for the top nav
     autoPanPaddingBottomRight: L.point(8, 8),
 };
+
+// ── CACHE ────────────────────────────────────────────────
+
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes in ms
+
+const MEM_CACHE = {};
+
+function memCacheGet(key) {
+    const entry = MEM_CACHE[key];
+    if (!entry) return null;
+    if (Date.now() - entry.ts > CACHE_TTL) {
+        delete MEM_CACHE[key];
+        return null;
+    }
+    return entry.data;
+}
+
+function memCacheSet(key, data) {
+    MEM_CACHE[key] = { data, ts: Date.now() };
+}
 
 // ── LOADER ────────────────────────────────────────────────
 
@@ -217,11 +238,19 @@ function setSatFilter(s) {
 // ── EARTHQUAKES ───────────────────────────────────────────
 
 async function loadEarthquakes() {
+    const cached = memCacheGet('eq');
+    if (cached) {
+        state.eqData = cached;
+        renderEarthquakes();
+        setLastUpdated();
+        return;
+    }
     showLoader('earthquakes');
     try {
         const res = await fetch(`${API_BASE}/earthquakes`);
         if (!res.ok) throw new Error(`Server returned ${res.status}`);
         state.eqData = await res.json();
+        memCacheSet('eq', state.eqData);
         setLastUpdated();
         renderEarthquakes();
     } catch (err) {
@@ -327,11 +356,20 @@ function formatAcqTime(t) {
 }
 
 async function loadFires(source = "goes") {
+    const cacheKey = `fires_${source}`;
+    const cached = memCacheGet(cacheKey);
+    if (cached) {
+        state.fireData = cached;
+        renderFires();
+        setLastUpdated();
+        return;
+    }
     showLoader('fires');
     try {
         const res = await fetch(`${API_BASE}/firms_fires?source=${source}`);
         if (!res.ok) throw new Error(`Server returned ${res.status}`);
         state.fireData = await res.json();
+        memCacheSet(cacheKey, state.fireData);
         setLastUpdated();
         renderFires();
     } catch (err) {
@@ -424,11 +462,19 @@ const GDACS_LABELS = {
 };
 
 async function loadGDACS() {
+    const cached = memCacheGet('gdacs');
+    if (cached) {
+        state.gdacData = cached;
+        renderGDACS();
+        setLastUpdated();
+        return;
+    }
     showLoader('gdacs');
     try {
         const res = await fetch(`${API_BASE}/gdacs`);
         if (!res.ok) throw new Error(`Server returned ${res.status}`);
         state.gdacData = await res.json();
+        memCacheSet('gdacs', state.gdacData);
         setLastUpdated();
         renderGDACS();
     } catch (err) {
