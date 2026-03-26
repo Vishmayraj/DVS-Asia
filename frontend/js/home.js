@@ -125,17 +125,11 @@ chipPairs.forEach(({ chip: chipId, tooltip: tooltipId }) => {
     if (!chip || !tooltip) return;
 
     function showTooltip() {
+        const rect = chip.getBoundingClientRect();
+        tooltip.style.left = rect.left + (rect.width / 2) + 'px';
+        tooltip.style.top  = (rect.top - 8) + 'px';
+        tooltip.style.transform = 'translateX(-50%) translateY(-100%)';
         tooltip.classList.add('visible');
-        FloatingUIDOM.computePosition(chip, tooltip, {
-            placement: 'top',
-            middleware: [
-                FloatingUIDOM.offset(10),
-                FloatingUIDOM.flip(),
-                FloatingUIDOM.shift({ padding: 12 }),
-            ],
-        }).then(({ x, y }) => {
-            Object.assign(tooltip.style, { left: x + 'px', top: y + 'px' });
-        });
     }
 
     function hideTooltip() {

@@ -1150,7 +1150,7 @@ a:hover { text-decoration: none; }
 /* ── FLOATING UI: SOURCE CHIP TOOLTIPS ───────────────────── */
 
 .chip-tooltip {
-    position: fixed;   /* Floating UI sets left/top */
+    position: fixed;
     z-index: 2000;
     max-width: 240px;
     background: var(--bg2);
@@ -1159,14 +1159,12 @@ a:hover { text-decoration: none; }
     padding: 12px 14px;
     box-shadow: 0 8px 32px rgba(0,0,0,0.45);
     opacity: 0;
-    transform: translateY(4px);
     pointer-events: none;
-    transition: opacity 0.18s, transform 0.18s;
+    transition: opacity 0.18s;  /* ← removed transform transition */
 }
 
 .chip-tooltip.visible {
     opacity: 1;
-    transform: translateY(0);
 }
 
 .chip-tooltip-title {
