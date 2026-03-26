@@ -141,3 +141,43 @@ chipPairs.forEach(({ chip: chipId, tooltip: tooltipId }) => {
     chip.addEventListener('focus',      showTooltip);
     chip.addEventListener('blur',       hideTooltip);
 });
+
+/* ── HERO MAP PREVIEW: INTERACTIVE ──────────────────────── */
+
+(function () {
+    const tabs    = document.querySelectorAll('.ptab');
+    const dots    = document.querySelectorAll('.mdot, .mflood');
+    const tooltip = document.getElementById('map-tooltip');
+    const ttTitle = document.getElementById('tt-title');
+    const ttSub   = document.getElementById('tt-sub');
+    const counter = document.getElementById('map-counter');
+    if (!tabs.length || !tooltip) return;
+
+    const counts = { all: 12, eq: 5, fire: 4, gdacs: 3 };
+
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            const filter = tab.dataset.filter;
+            tabs.forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            dots.forEach(dot => {
+                const show = filter === 'all' || dot.classList.contains(filter);
+                dot.classList.toggle('hidden', !show);
+            });
+            counter.textContent = counts[filter] + ' events';
+        });
+    });
+
+    dots.forEach(dot => {
+        dot.addEventListener('mouseenter', () => {
+            const rect = dot.closest('.map-preview-inner').getBoundingClientRect();
+            const dr   = dot.getBoundingClientRect();
+            tooltip.style.left = (dr.left - rect.left + dr.width / 2) + 'px';
+            tooltip.style.top  = (dr.top  - rect.top) + 'px';
+            ttTitle.textContent = dot.dataset.title;
+            ttSub.textContent   = dot.dataset.sub;
+            tooltip.classList.add('show');
+        });
+        dot.addEventListener('mouseleave', () => tooltip.classList.remove('show'));
+    });
+})();

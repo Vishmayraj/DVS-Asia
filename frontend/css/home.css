@@ -448,13 +448,16 @@ a:hover { text-decoration: none; }
 .source-chip--nasa  { border-color: rgba(248,113,113,0.4); color: #fca5a5; }
 .source-chip--gdacs { border-color: rgba(167,139,250,0.4); color: #c4b5fd; }
 
-/* hero visual (right side) */
+/* ── HERO VISUAL (right side) ────────────────────────────── */
+
 .hero-visual {
     position: relative;
     z-index: 1;
     flex: 1;
     display: flex;
-    justify-content: flex-end;
+    flex-direction: column;
+    align-items: flex-end;
+    justify-content: center;
     padding-left: 60px;
 }
 
@@ -482,7 +485,6 @@ a:hover { text-decoration: none; }
     overflow: hidden;
 }
 
-/* subtle lat/lng grid on preview */
 .map-preview-inner::before {
     content: '';
     position: absolute;
@@ -493,11 +495,7 @@ a:hover { text-decoration: none; }
     background-size: 32px 32px;
 }
 
-.map-dot {
-    position: absolute;
-    border-radius: 50%;
-    animation: map-dot-pulse 3s ease-in-out infinite;
-}
+/* removed .map-dot — replaced by .mdot and .mflood in the interactive section */
 
 @keyframes map-dot-pulse {
     0%, 100% { opacity: 0.7; transform: scale(1); }
@@ -1179,4 +1177,106 @@ a:hover { text-decoration: none; }
     font-size: 0.68rem;
     line-height: 1.6;
     color: var(--text-2);
+}
+
+/* ── HERO MAP PREVIEW: INTERACTIVE ──────────────────────── */
+
+.preview-tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 10px;
+}
+
+.ptab {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 4px 12px;
+    border-radius: 99px;
+    border: 1px solid var(--border-mid);
+    background: transparent;
+    color: var(--text-3);
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.02em;
+}
+
+.ptab.active {
+    background: rgba(34,211,184,0.12);
+    border-color: rgba(34,211,184,0.4);
+    color: var(--teal);
+}
+
+.ptab:hover:not(.active) {
+    color: var(--text-2);
+    border-color: var(--border-mid);
+}
+
+.mdot {
+    position: absolute;
+    border-radius: 50%;
+    animation: map-dot-pulse 3s ease-in-out infinite;
+    cursor: pointer;
+    transition: opacity 0.3s, transform 0.2s;
+}
+
+.mdot:hover {
+    transform: scale(2);
+    z-index: 10;
+}
+
+.mflood {
+    position: absolute;
+    animation: map-dot-pulse 3s ease-in-out infinite;
+    cursor: pointer;
+    transition: opacity 0.3s;
+}
+
+.mflood:hover {
+    z-index: 10;
+    filter: brightness(1.5);
+}
+
+.mdot.hidden, .mflood.hidden {
+    opacity: 0 !important;
+    pointer-events: none;
+}
+
+.mtooltip {
+    position: absolute;
+    z-index: 20;
+    pointer-events: none;
+    background: var(--bg2);
+    border: 1px solid var(--border-mid);
+    border-radius: var(--radius-md);
+    padding: 8px 12px;
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.15s;
+    transform: translate(-50%, -110%);
+}
+
+.mtooltip.show { opacity: 1; }
+
+.mtooltip-title {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 2px;
+}
+
+.mtooltip-sub {
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    color: var(--text-3);
+}
+
+.map-counter {
+    position: absolute;
+    bottom: 12px;
+    right: 14px;
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    color: var(--text-3);
+    letter-spacing: 0.04em;
 }

@@ -122,12 +122,15 @@ Pure HTML, CSS, and JavaScript. No React, no bundler, no build step. Leaflet 1.9
 **Design decisions:**
 
 - Sidebar layout on desktop (map 70%, panel 30%). On mobile, the sidebar becomes a bottom sheet that slides up from a pill handle, the map stays full screen underneath.
-- Dark and light themes, toggled in the sidebar. Switching theme also swaps the Leaflet tile layer between Carto Dark and Carto Light.
+- Dark and light themes, toggled via a button in both the home nav and the explorer nav. Switching theme also swaps the Leaflet tile layer between Carto Dark and Carto Light. Theme preference is persisted in `localStorage` and restored before first paint to avoid a flash.
 - Earthquake markers encode magnitude in both size and color (teal < M4, yellow M4-5, orange M5-6, red M6-7, bright red M7+).
 - Fire rectangles encode confidence as color (yellow = low, orange = nominal/medium, red = high). VIIRS and MODIS/GOES use different confidence formats unified at render time. Canvas renderer used for 10k+ fire shapes to avoid DOM bottlenecks.
 - GDACS events render as colored polygon carpets (flood = blue, cyclone = purple, drought = yellow) where geometry is available, falling back to a circle marker at the centroid.
 - Hover shows a summary tooltip. Click opens a detailed popup with all fields.
 - Map is bounded to prevent world-wrapping (`maxBounds`, `worldCopyJump: false`).
+- Home nav uses a floating Explorer dropdown (Syne + DM Mono, teal accents) built with Floating UI for positioning. The dropdown and source chip tooltips both use `getBoundingClientRect()` directly for placement, bypassing Floating UI's `computePosition` to avoid conflicts with the nav's `backdrop-filter` stacking context.
+- The home nav hides on scroll down past 40% of the viewport height and reappears on scroll up, keeping the map preview unobstructed on landing. The explorer nav is always visible since the map is the primary interface.
+- Source chips on the hero (USGS, NASA FIRMS, GDACS) show floating tooltips on hover/focus, positioned above each chip using `getBoundingClientRect()` and CSS `transform`.
 
 ---
 

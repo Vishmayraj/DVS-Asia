@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>DisasterViz Asia — Asia's disasters, mapped live</title>
+    <title>DisasterViz Asia</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/home.css"/>
@@ -123,20 +123,38 @@
             </div>
             <div class="hero-visual">
                 <div class="hero-map-preview">
+                    <div class="preview-tabs">
+                    <button class="ptab active" data-filter="all">All</button>
+                    <button class="ptab" data-filter="eq">⬡ Earthquakes</button>
+                    <button class="ptab" data-filter="fire">▲ Fires</button>
+                    <button class="ptab" data-filter="gdacs">◉ GDACS</button>
+                    </div>
                     <div class="map-preview-frame">
-                        <div class="map-preview-inner">
-                            <!-- Decorative map dots -->
-                            <div class="map-dot map-dot--eq" style="top:38%;left:62%;width:10px;height:10px;background:#f87171;animation-delay:0s"></div>
-                            <div class="map-dot map-dot--eq" style="top:55%;left:72%;width:7px;height:7px;background:#fb923c;animation-delay:0.4s"></div>
-                            <div class="map-dot map-dot--eq" style="top:44%;left:80%;width:14px;height:14px;background:#ff1a1a;animation-delay:0.8s"></div>
-                            <div class="map-dot map-dot--eq" style="top:30%;left:55%;width:6px;height:6px;background:#facc15;animation-delay:1.1s"></div>
-                            <div class="map-dot map-dot--fire" style="top:60%;left:45%;width:8px;height:8px;background:#ef4444;animation-delay:0.2s"></div>
-                            <div class="map-dot map-dot--fire" style="top:65%;left:50%;width:6px;height:6px;background:#fb923c;animation-delay:0.6s"></div>
-                            <div class="map-dot map-dot--fire" style="top:58%;left:58%;width:5px;height:5px;background:#fde68a;animation-delay:1.0s"></div>
-                            <div class="map-dot map-dot--flood" style="top:25%;left:40%;width:40px;height:28px;background:rgba(96,165,250,0.3);border:1px solid rgba(96,165,250,0.6);border-radius:4px;animation-delay:0.3s"></div>
-                            <div class="map-dot map-dot--flood" style="top:70%;left:30%;width:30px;height:20px;background:rgba(167,139,250,0.3);border:1px solid rgba(167,139,250,0.6);border-radius:4px;animation-delay:0.9s"></div>
-                            <div class="map-preview-label">Asia · Live view</div>
+                    <div class="map-preview-inner" id="mapInner">
+
+                        <div class="mdot eq" style="top:38%;left:62%;width:10px;height:10px;background:#f87171;animation-delay:0s" data-title="M 6.2 · Honshu, Japan" data-sub="2h ago · depth 34km"></div>
+                        <div class="mdot eq" style="top:55%;left:72%;width:7px;height:7px;background:#fb923c;animation-delay:0.4s" data-title="M 5.1 · Luzon, Philippines" data-sub="5h ago · depth 12km"></div>
+                        <div class="mdot eq" style="top:44%;left:80%;width:14px;height:14px;background:#ff1a1a;animation-delay:0.8s" data-title="M 7.4 · Kuril Islands" data-sub="18h ago · depth 56km"></div>
+                        <div class="mdot eq" style="top:30%;left:55%;width:6px;height:6px;background:#facc15;animation-delay:1.1s" data-title="M 4.3 · Xinjiang, China" data-sub="1d ago · depth 8km"></div>
+                        <div class="mdot eq" style="top:62%;left:38%;width:8px;height:8px;background:#fb923c;animation-delay:0.6s" data-title="M 5.5 · Andaman Islands" data-sub="3h ago · depth 22km"></div>
+
+                        <div class="mdot fire" style="top:60%;left:45%;width:8px;height:8px;background:#ef4444;animation-delay:0.2s" data-title="Fire · Sumatra, Indonesia" data-sub="NASA FIRMS · High confidence"></div>
+                        <div class="mdot fire" style="top:65%;left:50%;width:6px;height:6px;background:#fb923c;animation-delay:0.6s" data-title="Fire · Kalimantan" data-sub="NASA FIRMS · Medium confidence"></div>
+                        <div class="mdot fire" style="top:58%;left:58%;width:5px;height:5px;background:#fde68a;animation-delay:1.0s" data-title="Fire · Mekong Delta" data-sub="NASA FIRMS · Low confidence"></div>
+                        <div class="mdot fire" style="top:48%;left:42%;width:7px;height:7px;background:#ef4444;animation-delay:0.3s" data-title="Fire · Myanmar" data-sub="NASA FIRMS · High confidence"></div>
+
+                        <div class="mflood gdacs" style="top:25%;left:40%;width:40px;height:28px;background:rgba(96,165,250,0.3);border:1px solid rgba(96,165,250,0.6);border-radius:4px;animation-delay:0.3s" data-title="Flood · Bangladesh" data-sub="GDACS · Score 2.1 · Green alert"></div>
+                        <div class="mflood gdacs" style="top:70%;left:30%;width:30px;height:20px;background:rgba(167,139,250,0.3);border:1px solid rgba(167,139,250,0.6);border-radius:4px;animation-delay:0.9s" data-title="Cyclone · Bay of Bengal" data-sub="GDACS · Score 3.4 · Orange alert"></div>
+                        <div class="mflood gdacs" style="top:18%;left:62%;width:34px;height:22px;background:rgba(253,230,138,0.25);border:1px solid rgba(253,230,138,0.5);border-radius:4px;animation-delay:0.5s" data-title="Drought · Northern China" data-sub="GDACS · Score 1.8 · Green alert"></div>
+
+                        <div class="mtooltip" id="map-tooltip">
+                        <div class="mtooltip-title" id="tt-title"></div>
+                        <div class="mtooltip-sub" id="tt-sub"></div>
                         </div>
+
+                        <div class="map-preview-label">Asia · Live view</div>
+                        <div class="map-counter" id="map-counter">12 events</div>
+                    </div>
                     </div>
                 </div>
             </div>
