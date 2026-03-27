@@ -282,6 +282,123 @@ chipPairs.forEach(({ chip: chipId, tooltip: tooltipId }) => {
         dot.style.top  = pos.y + '%';
         // Stagger ripple animation per dot
         dot.style.setProperty('--ripple-delay', (i * 0.3) + 's');
+        // Second ripple ring for double-pulse effect
+        dot.innerHTML = '<span class="hping-ring2"></span>';
         pingsContainer.appendChild(dot);
     });
+})();
+
+/* ── SCROLL REVEAL ───────────────────────────────────────── */
+
+(function initScrollReveal() {
+    const els = document.querySelectorAll('.scroll-reveal');
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const delay = entry.target.style.getPropertyValue('--reveal-delay') || '0ms';
+                setTimeout(() => {
+                    entry.target.classList.add('revealed');
+                }, parseInt(delay));
+                observer.unobserve(entry.target);
+            }
+        });
+    }, { threshold: 0.15 });
+    els.forEach(el => observer.observe(el));
+})();
+
+/* ── COUNT-UP ANIMATION ──────────────────────────────────── */
+
+function initCountUp() {
+    const nums = document.querySelectorAll('.source-card-stat-num[data-target]');
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (!entry.isIntersecting) return;
+            const el = entry.target;
+            const target = parseInt(el.dataset.target);
+            const duration = 1400;
+            const start = performance.now();
+            const tick = (now) => {
+                const progress = Math.min((now - start) / duration, 1);
+                const ease = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+                el.textContent = Math.round(ease * target).toLocaleString();
+                if (progress < 1) requestAnimationFrame(tick);
+            };
+            requestAnimationFrame(tick);
+            observer.unobserve(el);
+        });
+    }, { threshold: 0.5 });
+    nums.forEach(el => observer.observe(el));
+}
+
+/* ── LIVE DATA COUNTS & INITIALIZATION ───────────────────── */
+
+(async function () {
+    const BASE = 'https://dvs-api.onrender.com';
+
+    // Helper — fetch and return count
+    async function fetchCount(url) {
+        try {
+            const controller = new AbortController();
+            const id = setTimeout(() => controller.abort(), 4000);
+            const res = await fetch(url, { signal: controller.signal });
+            clearTimeout(id);
+            
+            if (!res.ok) return null;
+            const data = await res.json();
+            
+            // Handle both array responses and {count: n} responses
+            if (typeof data.count === 'number') return data.count;
+            return Array.isArray(data) ? data.length : (data?.length ?? 0);
+        } catch {
+            return null;
+        }
+    }
+
+    // Attempt all fetches in parallel
+    try {
+        const [
+            eqCount,
+            fireCount,
+            gdacsCount
+        ] = await Promise.all([
+            fetchCount(`${BASE}/earthquakes`),
+            fetchCount(`${BASE}/firms_fires/summary`),
+            fetchCount(`${BASE}/gdacs`),
+        ]);
+
+        // Map real counts to types
+        const targets = {
+            eq:    eqCount,
+            fire:  fireCount,
+            gdacs: gdacsCount,
+        };
+
+        // Inject real counts into data-target
+        document.querySelectorAll('.source-card-stat-num[data-target]').forEach(el => {
+            const card = el.closest('.source-card');
+            if (!card) return;
+            
+            let val = null;
+            if (card.classList.contains('source-card--eq'))    val = targets.eq;
+            if (card.classList.contains('source-card--fire'))  val = targets.fire;
+            if (card.classList.contains('source-card--gdacs')) val = targets.gdacs;
+
+            if (val !== null) el.dataset.target = val;
+        });
+
+        // Update CTA stats instantly (they don't count up, they just update)
+        document.querySelectorAll('.cta-stat-num').forEach(el => {
+            let val = null;
+            if (el.classList.contains('cta-stat--eq'))    val = targets.eq;
+            if (el.classList.contains('cta-stat--fire'))  val = targets.fire;
+            if (el.classList.contains('cta-stat--gdacs')) val = targets.gdacs;
+            
+            if (val !== null) el.textContent = val.toLocaleString();
+        });
+    } catch (e) {
+        console.warn('Live count fetch failed, falling back to static data.');
+    } finally {
+        // ALWAYS run the count-up initialization, even if fetch failed
+        initCountUp();
+    }
 })();

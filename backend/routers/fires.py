@@ -14,6 +14,7 @@ VALID_SOURCES = {
 }
 
 
+
 @router.get("")
 def get_fires(source: str = Query(..., description="Satellite source: goes, modis, noaa20, noaa21, snpp")):
     if source not in VALID_SOURCES:
@@ -51,3 +52,38 @@ def get_fires(source: str = Query(..., description="Satellite source: goes, modi
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         pool.putconn(conn)
+
+
+@router.get("/summary")
+def get_fires_summary():
+    """
+    Returns a unified count of unique fire incidents across all sources.
+    Clusters detections within a 0.1 degree grid (~11km) and deduplicates 
+    across the 5 satellite sources.
+    """
+    conn = pool.getconn()
+    try:
+        cur = conn.cursor()
+        # Union all sources and group by rounded coordinates for grid clustering
+        cur.execute("""
+            WITH all_detections AS (
+                SELECT latitude, longitude FROM firms_goes_nrt
+                UNION ALL
+                SELECT latitude, longitude FROM firms_modis_nrt
+                UNION ALL
+                SELECT latitude, longitude FROM firms_viirs_noaa20_nrt
+                UNION ALL
+                SELECT latitude, longitude FROM firms_viirs_noaa21_nrt
+                UNION ALL
+                SELECT latitude, longitude FROM firms_viirs_snpp_nrt
+            )
+            SELECT COUNT(DISTINCT (ROUND(latitude::numeric, 1), ROUND(longitude::numeric, 1)))
+            FROM all_detections
+        """)
+        count = cur.fetchone()[0]
+        cur.close()
+        return {"count": count}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        pool.putconn(conn)

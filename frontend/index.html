@@ -248,77 +248,67 @@
             </div>
         </section>
 
-        <!-- FEATURE HIGHLIGHT -->
-        <section class="section section--alt">
+        <!-- DATA SOURCES -->
+        <section class="section section--sources">
             <div class="section-inner">
-                <div class="feature-split">
-                    <div class="feature-text">
-                        <span class="section-tag">Design decisions</span>
-                        <h2 class="section-title">Built for clarity,<br>not complexity.</h2>
-                        <div class="feature-list">
-                            <div class="feature-item">
-                                <div class="feature-item-icon">◈</div>
-                                <div>
-                                    <div class="feature-item-title">No frameworks, no build step</div>
-                                    <div class="feature-item-desc">Pure HTML, CSS, and Vanilla JS. Leaflet 1.9.4 for the map. Ships and loads fast.</div>
-                                </div>
+                <div class="section-header">
+                    <span class="section-tag">Data pipelines</span>
+                    <h2 class="section-title">Built for clarity,<br>not complexity.</h2>
+                    <p class="section-subtitle">Three authoritative sources. Deduplicated. Rendered live.</p>
+                </div>
+                <div class="sources-grid">
+
+                    <div class="source-card source-card--eq scroll-reveal" style="--reveal-delay: 0ms">
+                        <div class="source-card-header">
+                            <span class="source-card-icon">⬡</span>
+                            <div class="source-card-meta">
+                                <span class="source-card-name">USGS</span>
+                                <span class="source-card-update">↻ every 30 min</span>
                             </div>
-                            <div class="feature-item">
-                                <div class="feature-item-icon">◈</div>
-                                <div>
-                                    <div class="feature-item-title">Dark + light themes</div>
-                                    <div class="feature-item-desc">Theme toggle swaps both the UI and the Leaflet tile layer between Carto Dark and Carto Light.</div>
-                                </div>
-                            </div>
-                            <div class="feature-item">
-                                <div class="feature-item-icon">◈</div>
-                                <div>
-                                    <div class="feature-item-title">Mobile-first bottom sheet</div>
-                                    <div class="feature-item-desc">On mobile, the sidebar becomes a slide-up bottom sheet. The map stays full screen underneath.</div>
-                                </div>
-                            </div>
-                            <div class="feature-item">
-                                <div class="feature-item-icon">◈</div>
-                                <div>
-                                    <div class="feature-item-title">Deduplication by design</div>
-                                    <div class="feature-item-desc">Each data source lives in its own table. GDACS earthquakes and wildfires are filtered out to avoid overlap with USGS and FIRMS.</div>
-                                </div>
-                            </div>
+                            <span class="source-card-badge">Live</span>
+                        </div>
+                        <div class="source-card-title">Earthquake Hazards</div>
+                        <div class="source-card-desc">Every seismic event across Asia. 30-day rolling window with permanent archive. Magnitude, depth, and coordinates — all deduplicated.</div>
+                        <div class="source-card-footer">
+                            <span class="source-card-stat"><span class="source-card-stat-num" data-target="1284">0</span> events tracked</span>
+                            <span class="source-card-range">30-day window</span>
                         </div>
                     </div>
-                    <div class="feature-diagram">
-                        <div class="arch-diagram">
-                            <div class="arch-row arch-row--sources">
-                                <div class="arch-box arch-box--usgs">NASA FIRMS</div>
-                                <div class="arch-box arch-box--usgs">USGS</div>
-                                <div class="arch-box arch-box--usgs">GDACS</div>
+
+                    <div class="source-card source-card--fire scroll-reveal" style="--reveal-delay: 120ms">
+                        <div class="source-card-header">
+                            <span class="source-card-icon">▲</span>
+                            <div class="source-card-meta">
+                                <span class="source-card-name">NASA FIRMS</span>
+                                <span class="source-card-update">↻ every 10 min</span>
                             </div>
-                            <div class="arch-arrow-row">
-                                <div class="arch-arrow"></div>
-                            </div>
-                            <div class="arch-row">
-                                <div class="arch-box arch-box--actions">GitHub Actions<br><span class="arch-sub">cron · 30 min</span></div>
-                            </div>
-                            <div class="arch-arrow-row">
-                                <div class="arch-arrow"></div>
-                            </div>
-                            <div class="arch-row">
-                                <div class="arch-box arch-box--db">PostgreSQL<br><span class="arch-sub">Supabase</span></div>
-                            </div>
-                            <div class="arch-arrow-row">
-                                <div class="arch-arrow"></div>
-                            </div>
-                            <div class="arch-row">
-                                <div class="arch-box arch-box--api">FastAPI<br><span class="arch-sub">Render</span></div>
-                            </div>
-                            <div class="arch-arrow-row">
-                                <div class="arch-arrow"></div>
-                            </div>
-                            <div class="arch-row">
-                                <div class="arch-box arch-box--frontend">Leaflet Map<br><span class="arch-sub">Static frontend</span></div>
-                            </div>
+                            <span class="source-card-badge">Live</span>
+                        </div>
+                        <div class="source-card-title">Fire Information</div>
+                        <div class="source-card-desc">5 satellite feeds — GOES, MODIS, NOAA-20, NOAA-21, SNPP. Near-real-time fire detections from orbit, stitched into a single stream.</div>
+                        <div class="source-card-footer">
+                            <span class="source-card-stat"><span class="source-card-stat-num" data-target="9410">0</span> active fires</span>
+                            <span class="source-card-range">5 satellites</span>
                         </div>
                     </div>
+
+                    <div class="source-card source-card--gdacs scroll-reveal" style="--reveal-delay: 240ms">
+                        <div class="source-card-header">
+                            <span class="source-card-icon">◉</span>
+                            <div class="source-card-meta">
+                                <span class="source-card-name">GDACS</span>
+                                <span class="source-card-update">↻ every 15 min</span>
+                            </div>
+                            <span class="source-card-badge">Live</span>
+                        </div>
+                        <div class="source-card-title">Global Alerts</div>
+                        <div class="source-card-desc">Floods, cyclones, and droughts with pre-fetched polygon geometry. Alert severity encoded as green, orange, and red levels.</div>
+                        <div class="source-card-footer">
+                            <span class="source-card-stat"><span class="source-card-stat-num" data-target="7">0</span> active alerts</span>
+                            <span class="source-card-range">Floods · Cyclones · Droughts</span>
+                        </div>
+                    </div>
+
                 </div>
             </div>
         </section>
@@ -381,11 +371,30 @@
         <section class="section section--cta">
             <div class="section-inner">
                 <div class="cta-block">
-                    <div class="cta-glow"></div>
+                    <div class="cta-earth-bg" aria-hidden="true"></div>
+                    <div class="cta-overlay" aria-hidden="true"></div>
                     <div class="cta-content">
-                        <h2 class="cta-title">See it live.</h2>
-                        <p class="cta-desc">Open the explorer to browse real-time fires, earthquakes, and disaster alerts across Asia.</p>
-                        <a href="explorer.html" class="btn-primary btn-primary--large">
+                        <div class="cta-live-stats scroll-reveal">
+                            <div class="cta-stat">
+                                <span class="cta-stat-num cta-stat--eq">1,284</span>
+                                <span class="cta-stat-label">earthquakes</span>
+                            </div>
+                            <div class="cta-stat-divider">·</div>
+                            <div class="cta-stat">
+                                <span class="cta-stat-num cta-stat--fire">9,410</span>
+                                <span class="cta-stat-label">active fires</span>
+                            </div>
+                            <div class="cta-stat-divider">·</div>
+                            <div class="cta-stat">
+                                <span class="cta-stat-num cta-stat--gdacs">37</span>
+                                <span class="cta-stat-label">alerts</span>
+                            </div>
+                        </div>
+                        <h2 class="cta-title scroll-reveal" style="--reveal-delay:100ms">See it live.</h2>
+                        <p class="cta-desc scroll-reveal" style="--reveal-delay:200ms">
+                            Open the explorer to browse real-time fires, earthquakes,<br>and disaster alerts across Asia.
+                        </p>
+                        <a href="explorer.html" class="btn-primary btn-primary--large scroll-reveal" style="--reveal-delay:300ms">
                             <span>Launch Explorer</span>
                             <span class="btn-arrow">→</span>
                         </a>
