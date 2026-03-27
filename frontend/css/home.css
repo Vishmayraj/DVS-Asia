@@ -245,54 +245,33 @@ a:hover { text-decoration: none; }
     align-items: center;
     overflow: hidden;
     padding: calc(var(--nav-h) + 40px) 32px 80px;
+    background-image: url('https://eoimages.gsfc.nasa.gov/images/imagerecords/57000/57723/globe_west_2048.jpg');
+    background-size: cover;
+    background-position: center;
 }
 
-.hero-bg {
+.hero::before {
+    content: '';
     position: absolute;
     inset: 0;
+    background: rgba(4, 8, 26, 0.58);
     z-index: 0;
-    pointer-events: none;
-    overflow: hidden;
 }
 
-.hero-grid {
-    position: absolute;
-    inset: 0;
-    background-image:
-        linear-gradient(rgba(34,211,184,0.04) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(34,211,184,0.04) 1px, transparent 1px);
-    background-size: 60px 60px;
-    mask-image: radial-gradient(ellipse 80% 60% at 50% 50%, black 30%, transparent 100%);
+.hero > * {
+    position: relative;
+    z-index: 1;
 }
 
-.hero-glow {
-    position: absolute;
-    border-radius: 50%;
-    filter: blur(80px);
-    opacity: 0.18;
-}
-
-.hero-glow--1 {
-    width: 600px;
-    height: 600px;
-    background: var(--teal);
-    top: -100px;
-    right: -100px;
-    animation: glow-pulse 8s ease-in-out infinite;
-}
-
-.hero-glow--2 {
-    width: 400px;
-    height: 400px;
-    background: #60a5fa;
-    bottom: 0;
-    left: -80px;
-    animation: glow-pulse 10s ease-in-out infinite reverse;
-}
-
-@keyframes glow-pulse {
-    0%, 100% { opacity: 0.12; transform: scale(1); }
-    50%       { opacity: 0.22; transform: scale(1.08); }
+@keyframes heroFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(16px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .hero-content {
@@ -300,6 +279,7 @@ a:hover { text-decoration: none; }
     z-index: 1;
     max-width: 580px;
     flex: 1;
+    animation: heroFadeIn 0.5s cubic-bezier(0.0, 0.0, 0.2, 1) both;
 }
 
 .hero-eyebrow {
@@ -1018,7 +998,10 @@ a:hover { text-decoration: none; }
     .nav-hamburger { display: flex; }
     .nav-inner { padding: 0 20px; }
 
-    .hero { padding: calc(var(--nav-h) + 24px) 20px 60px; }
+    .hero {
+        padding: calc(var(--nav-h) + 24px) 20px 60px;
+        background-position: center top;
+    }
     .hero-title { font-size: 2.4rem; }
 
     .stats-bar-inner { flex-wrap: wrap; }
