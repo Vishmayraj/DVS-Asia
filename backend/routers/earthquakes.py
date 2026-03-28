@@ -8,8 +8,9 @@ router = APIRouter(prefix="/earthquakes", tags=["earthquakes"])
 
 @router.get("")
 def get_earthquakes():
-    conn = pool.getconn()
+    conn = None
     try:
+        conn = pool.getconn()
         cur = conn.cursor()
         cur.execute("""
             SELECT id, latitude, longitude, mag, magtype, depth, tsunami, sig, place, time
@@ -36,13 +37,15 @@ def get_earthquakes():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     finally:
-        pool.putconn(conn)
+        if conn:
+            pool.putconn(conn)
 
 
 @router.get("/archive")
 def get_earthquakes_archive():
-    conn = pool.getconn()
+    conn = None
     try:
+        conn = pool.getconn()
         cur = conn.cursor()
         cur.execute("""
             SELECT id, latitude, longitude, mag, place, time
@@ -65,4 +68,5 @@ def get_earthquakes_archive():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     finally:
-        pool.putconn(conn)
+        if conn:
+            pool.putconn(conn)

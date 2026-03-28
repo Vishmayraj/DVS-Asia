@@ -8,8 +8,9 @@ router = APIRouter(prefix="/gdacs", tags=["gdacs"])
 
 @router.get("")
 def get_gdacs():
-    conn = pool.getconn()
+    conn = None
     try:
+        conn = pool.getconn()
         cur = conn.cursor()
         cur.execute("""
             SELECT id, type, description, score, org_country,
@@ -43,4 +44,5 @@ def get_gdacs():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     finally:
-        pool.putconn(conn)
+        if conn:
+            pool.putconn(conn)
